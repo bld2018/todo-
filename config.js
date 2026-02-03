@@ -1,38 +1,58 @@
 // ==================== Supabase 配置 ====================
 // ⚠️ 部署前请替换为您的 Supabase 项目配置
 
+// 1. 替换为您的 Supabase 项目 URL（格式：https://xxxxx.supabase.co）
 const SUPABASE_URL = 'https://xinqzxrulxtermoifija.supabase.co';
+
+// 2. 替换为您的 anon public key（在 Project Settings → API 中获取）
 const SUPABASE_ANON_KEY = 'xinqzxrulxtermoifija';
 
-// 初始化 Supabase 客户端
-const supabase = supabase.create({
-    url: SUPABASE_URL,
-    key: SUPABASE_ANON_KEY
-});
+// 3. 创建唯一客户端实例（避免与全局 supabase 命名空间冲突）
+window.sesameSupabase = null;
+try {
+    // 从全局 supabase 命名空间获取 createClient 方法
+    const { createClient } = supabase;
+    window.sesameSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('✅ Supabase 客户端初始化成功');
+} catch (error) {
+    console.error('❌ Supabase 初始化失败:', error);
+    alert('数据库配置错误！请检查 config.js 中的 SUPABASE_URL 和 SUPABASE_ANON_KEY');
+}
 
-// 默认管理员账号（生产环境建议改为数据库存储）
-const DEFAULT_ADMIN = {
-    username: 'admin',
-    password: 'admin123'
+// 4. 全局配置（挂载到 window 避免作用域问题）
+window.SESAME_CONFIG = {
+    DEFAULT_ADMIN: {
+        username: 'admin',
+        password: 'admin123'
+    },
+    TARGET_SCORE: 2026
 };
 
-// ==================== 工具函数 ====================
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-function showToast(message, type = 'success') {
-    // 简单的提示（可以用 alert 或更复杂的 Toast 组件）
-    if (type === 'error') {
-        alert('❌ ' + message);
-    } else {
-        alert('✅ ' + message);
+// 5. 全局工具函数
+window.sesameUtils = {
+    formatDate: function(dateString) {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    },
+    
+    showToast: function(message, type = 'success') {
+        if (type === 'error') {
+            alert('❌ ' + message);
+        } else {
+            alert('✅ ' + message);
+        }
+    },
+    
+    // 检查 Supabase 是否就绪
+    isSupabaseReady: function() {
+        return window.sesameSupabase !== null && 
+               typeof window.sesameSupabase.from === 'function';
     }
-}
+};
