@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>芝麻分精准匹配系统 - Supabase版</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-left">
+                <div class="logo">🎯 芝麻分组队系统</div>
+            </div>
+            <div class="nav-right">
+                <span id="userStatus">👤 未登录</span>
+                <button class="btn btn-outline" onclick="showLoginModal()">登录</button>
+                <button class="btn btn-primary" onclick="window.location.href='admin.html'">⚙️ 管理后台</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 系统公告 -->
+    <div class="announcement">
+        <div class="container">
+            <div class="announcement-icon">📢</div>
+            <div class="announcement-text">
+                <strong>系统公告：</strong> 本系统查找总分<strong>恰好等于2026</strong>的组合，删除需备注原因，所有操作均有审计日志
+            </div>
+        </div>
+    </div>
+
+    <div class="container main-container">
+        <div class="grid">
+            <!-- 左侧：添加参与者 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>📋 添加参与者</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="nameInput">姓名/昵称 <span class="required">*</span></label>
+                        <input type="text" id="nameInput" placeholder="例如：张三" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="scoreInput">芝麻分 (350-950) <span class="required">*</span></label>
+                        <input type="number" id="scoreInput" min="350" max="950" placeholder="例如：829" class="form-control">
+                    </div>
+                    <button class="btn btn-primary btn-block" onclick="addParticipant()">
+                        <span class="btn-icon">✚</span> 添加参与者
+                    </button>
+                </div>
+            </div>
+
+            <!-- 中间：参与者列表 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>👥 已登记参与者 (<span id="participantCount">0</span>)</h2>
+                </div>
+                <div class="card-body">
+                    <div class="participants-list" id="participantsList">
+                        <div class="empty-state">
+                            <div class="empty-icon">👥</div>
+                            <p>暂无参与者</p>
+                            <p class="empty-text">请在左侧添加参与者信息</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：匹配结果 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>🎯 匹配结果</h2>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-success btn-block" onclick="matchTeams()">
+                        <span class="btn-icon">🔍</span> 立即查找所有组合
+                    </button>
+                    <div id="matchResult" class="match-result">
+                        <div class="empty-state">
+                            <div class="empty-icon">🎯</div>
+                            <p>点击上方按钮开始匹配</p>
+                            <p class="empty-text">系统将查找所有总分恰好等于2026的组合</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登录模态框 -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔐 用户登录</h3>
+                <span class="close" onclick="closeLoginModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="loginUsername" class="form-control" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="请输入密码">
+                </div>
+                <div id="loginError" class="error-message" style="display: none;"></div>
+                <button class="btn btn-primary btn-block" onclick="login()">登录</button>
+                <div style="text-align: center; margin-top: 15px; color: #8c8c8c; font-size: 0.9rem;">
+                    默认管理员账号: admin / admin123
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🗑️ 删除确认</h3>
+                <span class="close" onclick="closeDeleteModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="deleteTargetInfo" style="text-align: center; margin-bottom: 20px; color: #595959;"></div>
+                <div class="form-group">
+                    <label>删除原因 <span class="required">*</span></label>
+                    <select id="deleteReasonSelect" class="form-control" onchange="updateCustomReason()">
+                        <option value="">-- 选择原因 --</option>
+                        <option value="已组队成功">✅ 已组队成功</option>
+                        <option value="输入错误">✏️ 输入错误</option>
+                        <option value="重复登记">🔄 重复登记</option>
+                        <option value="用户退出">🚪 用户退出</option>
+                        <option value="其他">📝 其他原因</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label id="customReasonLabel" style="display: none;">详细说明</label>
+                    <textarea id="deleteReason" class="form-control" rows="3" 
+                        placeholder="请输入删除原因（至少5个字）" style="display: none;"></textarea>
+                </div>
+                <div id="deleteError" class="error-message" style="display: none;"></div>
+                <button class="btn btn-danger btn-block" id="confirmDeleteBtn" onclick="confirmDelete()" disabled>确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 芝麻分精准匹配系统 | Powered by Supabase</p>
+            <p class="footer-note">
+                💡 提示：数据存储在云端，换设备登录即可查看 | 
+                🔒 所有删除操作均有审计日志，不可删除
+            </p>
+        </div>
+    </footer>
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
