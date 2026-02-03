@@ -5,7 +5,7 @@
 const SUPABASE_URL = 'https://xinqzxrulxtermoifija.supabase.co';
 
 // 2. 替换为您的 anon public key（在 Project Settings → API 中获取）
-const SUPABASE_ANON_KEY = 'xinqzxrulxtermoifija';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpbnF6eHJ1bHh0ZXJtb2lmaWphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMTIzNjMsImV4cCI6MjA4NTY4ODM2M30.0WidJmYQb8T8KxsFu7MapM-WCGs90hWH0ypPII1CvfA';
 
 // 3. 创建 Supabase 客户端（使用全局 supabase 命名空间，避免重复声明）
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
