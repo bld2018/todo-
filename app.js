@@ -258,6 +258,12 @@ async function confirmDelete() {
     const customReason = document.getElementById('deleteReason').value.trim();
     const finalReason = reason === '其他' ? customReason : reason;
     
+    // 验证删除原因 - 只有"已组队成功"才允许删除
+    if (finalReason !== '已组队成功') {
+        showError('❌ 删除失败：只有选择"已组队成功"才能删除参与者');
+        return;
+    }
+    
     if (!finalReason || finalReason.length < 5) {
         showError('删除原因至少需要5个字');
         return;
@@ -320,7 +326,7 @@ function renderParticipants() {
                 <span class="participant-name">${p.name}</span>
                 <span class="participant-score">${p.score}</span>
             </div>
-            <button class="btn-remove" onclick="openDeleteModal('${p.id}', '${p.name}', ${p.score})">
+            <button class="btn-remove" onclick="showAdminApprovalRequired()">
                 🗑️ 删除
             </button>
         </div>
@@ -620,3 +626,8 @@ document.addEventListener('keydown', (e) => {
         closeDeleteModal();
     }
 });
+
+// ==================== 管理员审核提示 ====================
+function showAdminApprovalRequired() {
+    alert('⚠️ 需要管理员审核\n\n删除操作需要管理员权限，请前往管理后台进行操作。');
+}

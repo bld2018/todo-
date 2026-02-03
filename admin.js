@@ -316,7 +316,14 @@ async function deleteParticipant(id, name) {
         return;
     }
     
-    const reason = prompt('请输入删除原因（至少5个字）：');
+    const reason = prompt('请输入删除原因（只能输入"已组队成功"才能删除）：');
+    
+    // 验证删除原因 - 只有"已组队成功"才允许删除
+    if (reason !== '已组队成功') {
+        alert('❌ 删除失败：只有输入"已组队成功"才能删除参与者');
+        return;
+    }
+    
     if (!reason || reason.trim().length < 5) {
         alert('删除原因至少需要5个字！');
         return;
@@ -371,7 +378,14 @@ async function bulkDelete() {
         return;
     }
     
-    const reason = prompt('请输入删除原因（将应用于所有选中项，至少5个字）：');
+    const reason = prompt('请输入删除原因（只能输入"已组队成功"才能删除）：');
+    
+    // 验证删除原因 - 只有"已组队成功"才允许删除
+    if (reason !== '已组队成功') {
+        alert('❌ 删除失败：只有输入"已组队成功"才能删除参与者');
+        return;
+    }
+    
     if (!reason || reason.trim().length < 5) {
         alert('删除原因至少需要5个字！');
         return;
@@ -537,6 +551,10 @@ function getCombinations(arr, size) {
     helper(0, []);
     return result;
 }
+
+
+
+
 
 
 
