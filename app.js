@@ -295,6 +295,9 @@ async function matchTeams() {
     
     const combos = findAllPerfectCombinations(participants, TARGET_SCORE);
     
+    // 保存所有组合（用于查询）
+    allCombinations = combos;
+    
     renderMatchResult(combos);
 }
 
@@ -342,6 +345,12 @@ function getCombinations(arr, size) {
 
 function renderMatchResult(combos) {
     const resultEl = document.getElementById('matchResult');
+    const queryResultEl = document.getElementById('queryResult');
+    
+    // 隐藏查询结果
+    if (queryResultEl) {
+        queryResultEl.style.display = 'none';
+    }
     
     if (combos.length === 0) {
         resultEl.innerHTML = `
@@ -388,20 +397,24 @@ function renderMatchResult(combos) {
         `;
     });
     
+    // 添加提示：可以查询特定用户
+    if (combos.length > 0) {
+        html += `
+            <div style="margin-top: 30px; padding: 15px; background: #e6f7ff; border-radius: 10px; border-left: 4px solid #1890ff;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="font-size: 1.5rem;">💡</div>
+                    <div>
+                        <strong>快速查询：</strong>在上方输入用户ID（如 P123456），即可查看该用户参与的所有匹配组合
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
     resultEl.innerHTML = html;
 }
 
-// ==================== 点击模态框外部关闭 ====================
-document.addEventListener('click', (e) => {
-    if (e.target.id === 'loginModal' || e.target.id === 'deleteModal') {
-        closeLoginModal();
-        closeDeleteModal();
-    }
-});
-// ==================== 全局变量（添加到文件顶部） ====================
-let allCombinations = []; // 保存所有匹配组合，用于查询
-
-// ==================== 查询功能（添加到文件末尾） ====================
+// ==================== 查询功能 ====================
 function queryCombinations() {
     const queryId = document.getElementById('queryIdInput').value.trim().toUpperCase();
     
@@ -422,12 +435,17 @@ function queryCombinations() {
             matchTeams();
             // 延迟执行查询（等待匹配完成）
             setTimeout(() => {
-                queryCombinations();
-            }, 1000);
+                performQuery(queryId);
+            }, 1500);
         }
         return;
     }
     
+    // 直接执行查询
+    performQuery(queryId);
+}
+
+function performQuery(queryId) {
     // 过滤包含该ID的组合
     const filtered = allCombinations.filter(combo => 
         combo.members.some(member => member.id.toUpperCase() === queryId)
@@ -442,9 +460,13 @@ function renderQueryResult(combos, queryId) {
     const matchResultEl = document.getElementById('matchResult');
     
     // 隐藏常规匹配结果
-    matchResultEl.style.display = 'none';
+    if (matchResultEl) {
+        matchResultEl.style.display = 'none';
+    }
     // 显示查询结果区域
-    resultEl.style.display = 'block';
+    if (resultEl) {
+        resultEl.style.display = 'block';
+    }
     
     if (combos.length === 0) {
         resultEl.innerHTML = `
@@ -519,59 +541,29 @@ function renderQueryResult(combos, queryId) {
 }
 
 function clearQuery() {
-    document.getElementById('queryIdInput').value = '';
-    document.getElementById('queryResult').style.display = 'none';
-    document.getElementById('matchResult').style.display = 'block';
-}
-
-// ==================== 修改 matchTeams 函数（保存所有组合） ====================
-// 找到 matchTeams 函数，修改如下：
-async function matchTeams() {
-    if (participants.length === 0) {
-        showToast('请先添加参与者', 'error');
-        return;
-    }
-    
-    if (participants.length === 1) {
-        showToast('至少需要2个参与者才能匹配', 'error');
-        return;
-    }
-    
-    const combos = findAllPerfectCombinations(participants, TARGET_SCORE);
-    
-    // 保存所有组合（用于查询）
-    allCombinations = combos;
-    
-    renderMatchResult(combos);
-}
-
-// ==================== 修改 renderMatchResult 函数（添加重置提示） ====================
-// 找到 renderMatchResult 函数，在成功渲染后添加：
-function renderMatchResult(combos) {
-    const resultEl = document.getElementById('matchResult');
+    const queryInput = document.getElementById('queryIdInput');
     const queryResultEl = document.getElementById('queryResult');
+    const matchResultEl = document.getElementById('matchResult');
     
-    // 隐藏查询结果
-    queryResultEl.style.display = 'none';
-    
-    // ... [原有渲染代码保持不变] ...
-    
-    // 在函数末尾添加（在 resultEl.innerHTML = html 之后）：
-    // 添加提示：可以查询特定用户
-    if (combos.length > 0) {
-        const promptHtml = `
-            <div style="margin-top: 30px; padding: 15px; background: #e6f7ff; border-radius: 10px; border-left: 4px solid #1890ff;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="font-size: 1.5rem;">💡</div>
-                    <div>
-                        <strong>快速查询：</strong>在上方输入用户ID（如 P123456），即可查看该用户参与的所有匹配组合
-                    </div>
-                </div>
-            </div>
-        `;
-        resultEl.innerHTML += promptHtml;
+    if (queryInput) {
+        queryInput.value = '';
+    }
+    if (queryResultEl) {
+        queryResultEl.style.display = 'none';
+    }
+    if (matchResultEl) {
+        matchResultEl.style.display = 'block';
     }
 }
+
+// ==================== 点击模态框外部关闭 ====================
+document.addEventListener('click', (e) => {
+    if (e.target.id === 'loginModal' || e.target.id === 'deleteModal') {
+        closeLoginModal();
+        closeDeleteModal();
+    }
+});
+
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         closeLoginModal();
