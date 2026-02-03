@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支付宝"芝麻凑分"2026组队工具</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: #f7f9fc;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            background-image: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(90deg, #1a73e8 0%, #0d47a1 100%);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(13, 71, 161, 0.2);
+        }
+        
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        header h1 i {
+            color: #FFD700;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .highlight {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+            flex: 1;
+            min-width: 300px;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .calculator-card {
+            border-top: 5px solid #1a73e8;
+        }
+        
+        .share-card {
+            border-top: 5px solid #34a853;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #1a73e8;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .share-card .card-title {
+            color: #34a853;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+        
+        .score-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5eb;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+        
+        .score-input:focus {
+            border-color: #1a73e8;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+        
+        .result-box {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #1a73e8;
+        }
+        
+        .result-title {
+            font-weight: 600;
+            color: #1a73e8;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .recommendation {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #0d47a1;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #e8f0fe;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .team-options {
+            margin-top: 20px;
+        }
+        
+        .team-option {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #34a853;
+        }
+        
+        .team-option.recommended {
+            background-color: #e8f5e9;
+            border-left-color: #0f9d58;
+            font-weight: 600;
+        }
+        
+        .team-option .score {
+            font-weight: bold;
+            color: #1a73e8;
+        }
+        
+        .share-textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 2px solid #e1e5eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            resize: vertical;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .share-textarea:focus {
+            border-color: #34a853;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 168, 83, 0.1);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .btn-primary {
+            background-color: #1a73e8;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0d62d9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(26, 115, 232, 0.3);
+        }
+        
+        .btn-success {
+            background-color: #34a853;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #2e8b47;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(52, 168, 83, 0.3);
+        }
+        
+        .btn-copy {
+            background-color: #5f6368;
+            color: white;
+        }
+        
+        .btn-copy:hover {
+            background-color: #4a4d52;
+        }
+        
+        .verification-section {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            padding: 25px;
+            margin-top: 20px;
+            border-top: 5px solid #fbbc05;
+        }
+        
+        .verification-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #f57c00;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .team-inputs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .team-member {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .team-member label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+        
+        .verification-result {
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: none;
+        }
+        
+        .success {
+            background-color: #e8f5e9;
+            color: #0f9d58;
+            border: 2px solid #0f9d58;
+        }
+        
+        .error {
+            background-color: #fce8e6;
+            color: #c5221f;
+            border: 2px solid #c5221f;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e5eb;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .tips {
+            background-color: #fff8e1;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            border-left: 4px solid #ffb300;
+        }
+        
+        .tips-title {
+            font-weight: 600;
+            color: #f57c00;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tip-item {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        
+        .tip-item i {
+            color: #1a73e8;
+            margin-top: 3px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .btn {
+                min-width: 100%;
+            }
+            
+            header h1 {
+                font-size: 1.8rem;
+            }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(26, 115, 232, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0); }
+        }
+        
+        .badge {
+            display: inline-block;
+            background-color: #fbbc05;
+            color: #202124;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-users"></i> 支付宝"芝麻凑分"2026组队工具</h1>
+            <p>输入你的芝麻分，获取<span class="highlight">最优组队方案</span>，快速生成组队文案，轻松找到队友赢红包！</p>
+            <p style="margin-top: 10px; font-size: 0.95rem;">活动时间：2月3日 - 2月17日12点 | 红包总数：110万份 | 先到先得</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="card calculator-card">
+                <h2 class="card-title"><i class="fas fa-calculator"></i> 组队分数计算器</h2>
+                
+                <div class="input-group">
+                    <label for="userScore"><i class="fas fa-user"></i> 请输入你的芝麻信用分</label>
+                    <input type="number" id="userScore" class="score-input" min="350" max="950" placeholder="例如：829" value="829">
+                    <div style="text-align: center; margin-top: 5px; font-size: 0.9rem; color: #666;">请输入350-950之间的整数</div>
+                </div>
+                
+                <button id="calculateBtn" class="btn btn-primary pulse">
+                    <i class="fas fa-bolt"></i> 计算最佳队友组合
+                </button>
+                
+                <div id="resultBox" class="result-box" style="display: none;">
+                    <div class="result-title"><i class="fas fa-lightbulb"></i> 计算结果</div>
+                    <p>你的分数：<strong><span id="displayScore">0</span>分</strong></p>
+                    <p>两位队友需要总分：<strong><span id="neededScore">0</span>分</strong></p>
+                    
+                    <div class="recommendation">
+                        <i class="fas fa-star"></i> 最推荐组合：<span id="bestCombination">550分 + 647分</span>
+                    </div>
+                    
+                    <div class="team-options">
+                        <div class="result-title"><i class="fas fa-list-ol"></i> 其他可行组合（按推荐度排序）</div>
+                        <div id="teamOptionsList">
+                            <!-- 动态生成组合列表 -->
+                        </div>
+                    </div>
+                    
+                    <div class="tips">
+                        <div class="tips-title"><i class="fas fa-info-circle"></i> 组队小贴士</div>
+                        <div class="tip-item"><i class="fas fa-check-circle"></i> <strong>你的分数≥800</strong>，队伍红包<strong>自动翻倍</strong>！</div>
+                        <div class="tip-item"><i class="fas fa-check-circle"></i> 优先寻找500-650分段的队友，用户基数大，匹配成功率高</div>
+                        <div class="tip-item"><i class="fas fa-check-circle"></i> 低分用户(400-550)非常抢手，遇到请果断组队</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card share-card">
+                <h2 class="card-title"><i class="fas fa-share-alt"></i> 快速组队分享</h2>
+                
+                <div class="input-group">
+                    <label for="shareText"><i class="fas fa-edit"></i> 组队文案（可编辑）</label>
+                    <textarea id="shareText" class="share-textarea" placeholder="将在这里生成组队文案..."></textarea>
+                </div>
+                
+                <div class="button-group">
+                    <button id="generateBtn" class="btn btn-success">
+                        <i class="fas fa-magic"></i> 生成组队文案
+                    </button>
+                    <button id="copyBtn" class="btn btn-copy">
+                        <i class="far fa-copy"></i> 复制到剪贴板
+                    </button>
+                </div>
+                
+                <div class="tips" style="margin-top: 25px;">
+                    <div class="tips-title"><i class="fas fa-bullhorn"></i> 组队渠道建议</div>
+                    <div class="tip-item"><i class="fab fa-weibo"></i> <strong>微博</strong>：搜索话题 <code>#芝麻凑分#</code>，在评论区发布</div>
+                    <div class="tip-item"><i class="fab fa-weixin"></i> <strong>微信群</strong>：在支付宝活动群、好友群分享</div>
+                    <div class="tip-item"><i class="fab fa-reddit"></i> <strong>小红书/豆瓣</strong>：搜索"芝麻凑分"话题发布</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="verification-section">
+            <h2 class="verification-title"><i class="fas fa-check-double"></i> 组队分数验证器</h2>
+            <p>输入完整队伍信息，验证总分是否正好为2026分</p>
+            
+            <div class="team-inputs">
+                <div class="team-member">
+                    <label for="member1">队友A分数</label>
+                    <input type="number" id="member1" class="score-input" placeholder="队友A的芝麻分">
+                </div>
+                
+                <div class="team-member">
+                    <label for="member2">队友B分数</label>
+                    <input type="number" id="member2" class="score-input" placeholder="队友B的芝麻分">
+                </div>
+                
+                <div class="team-member">
+                    <label for="member3">队友C分数（你的分数）</label>
+                    <input type="number" id="member3" class="score-input" placeholder="你的芝麻分" value="829">
+                </div>
+            </div>
+            
+            <button id="verifyBtn" class="btn btn-primary" style="background-color: #f57c00;">
+                <i class="fas fa-check-circle"></i> 验证总分是否为2026
+            </button>
+            
+            <div id="verificationResult" class="verification-result"></div>
+        </div>
+        
+        <div class="footer">
+            <p>⚠️ 提示：本工具为第三方辅助工具，与支付宝官方无关。请以支付宝活动页面实际规则为准。</p>
+            <p>活动规则：3人组队，芝麻分总和必须恰好为2026分 | 每人仅可成功组队1次 | 红包总数110万份，先到先得</p>
+            <p style="margin-top: 15px;">© 2026 芝麻凑分组队工具 | 设计用于帮助用户快速找到最优组队方案</p>
+        </div>
+    </div>
+
+    <script>
+        // DOM元素
+        const userScoreInput = document.getElementById('userScore');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const resultBox = document.getElementById('resultBox');
+        const displayScore = document.getElementById('displayScore');
+        const neededScore = document.getElementById('neededScore');
+        const bestCombination = document.getElementById('bestCombination');
+        const teamOptionsList = document.getElementById('teamOptionsList');
+        const generateBtn = document.getElementById('generateBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const shareText = document.getElementById('shareText');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const verificationResult = document.getElementById('verificationResult');
+        
+        // 预定义的推荐组合（基于常见芝麻分分布）
+        const recommendedCombinations = [
+            { score1: 550, score2: 647, recommended: true },
+            { score1: 600, score2: 597, recommended: true },
+            { score1: 500, score2: 697, recommended: true },
+            { score1: 650, score2: 547, recommended: false },
+            { score1: 450, score2: 747, recommended: false },
+            { score1: 700, score2: 497, recommended: false },
+            { score1: 400, score2: 797, recommended: false },
+            { score1: 750, score2: 447, recommended: false }
+        ];
+        
+        // 计算最佳队友组合
+        function calculateTeamOptions(userScore) {
+            const neededTotal = 2026 - userScore;
+            
+            // 更新显示
+            displayScore.textContent = userScore;
+            neededScore.textContent = neededTotal;
+            
+            // 更新最佳组合（基于用户分数动态调整）
+            let bestOption;
+            if (userScore >= 800) {
+                // 高分用户，推荐常见分数组合
+                bestOption = "500分 + " + (neededTotal - 500) + "分";
+            } else if (userScore >= 700) {
+                bestOption = "550分 + " + (neededTotal - 550) + "分";
+            } else if (userScore >= 600) {
+                bestOption = "600分 + " + (neededTotal - 600) + "分";
+            } else {
+                // 低分用户，推荐高分队友组合
+                bestOption = "800分 + " + (neededTotal - 800) + "分";
+            }
+            
+            bestCombination.textContent = bestOption;
+            
+            // 生成可行的组合列表
+            teamOptionsList.innerHTML = '';
+            
+            // 生成5个推荐组合
+            for (let i = 0; i < 5; i++) {
+                // 基于用户分数和需要总分，生成合理的组合
+                let score1, score2;
+                
+                if (userScore >= 800) {
+                    // 高分用户，队友分数可以较低
+                    score1 = 500 + i * 30;
+                    score2 = neededTotal - score1;
+                } else if (userScore >= 700) {
+                    score1 = 550 + i * 25;
+                    score2 = neededTotal - score1;
+                } else if (userScore >= 600) {
+                    score1 = 600 + i * 20;
+                    score2 = neededTotal - score1;
+                } else {
+                    // 低分用户，需要高分队友
+                    score1 = 700 + i * 25;
+                    score2 = neededTotal - score1;
+                }
+                
+                // 确保分数在合理范围内
+                if (score1 >= 350 && score1 <= 950 && score2 >= 350 && score2 <= 950) {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = i < 2 ? 'team-option recommended' : 'team-option';
+                    
+                    const teamText = document.createElement('div');
+                    teamText.innerHTML = `<span class="score">${score1}分</span> + <span class="score">${score2}分</span>`;
+                    
+                    const totalText = document.createElement('div');
+                    totalText.textContent = `总和：${score1 + score2}分`;
+                    
+                    optionDiv.appendChild(teamText);
+                    optionDiv.appendChild(totalText);
+                    
+                    teamOptionsList.appendChild(optionDiv);
+                }
+            }
+            
+            // 显示结果区域
+            resultBox.style.display = 'block';
+            
+            // 自动生成组队文案
+            generateTeamText(userScore, neededTotal);
+        }
+        
+        // 生成组队文案
+        function generateTeamText(userScore, neededTotal) {
+            const now = new Date();
+            const timeString = `${now.getMonth() + 1}月${now.getDate()}日 ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            let text = `【支付宝芝麻凑分2026】诚信组队\n`;
+            text += `我的分数：${userScore}分（${userScore >= 800 ? '≥800分，可红包翻倍' : '＜800分'}）\n`;
+            text += `需求队友：两位队友总分需要${neededTotal}分\n`;
+            text += `推荐组合：${bestCombination.textContent}\n`;
+            text += `要求：三人芝麻分总和必须恰好为2026分\n`;
+            text += `活动截止：2月17日12点（红包110万份，先到先得）\n`;
+            text += `有意者请速联系，可提供支付宝分数卡验证！\n`;
+            text += `发布时间：${timeString}`;
+            
+            shareText.value = text;
+        }
+        
+        // 验证总分
+        function verifyTotalScore() {
+            const score1 = parseInt(document.getElementById('member1').value) || 0;
+            const score2 = parseInt(document.getElementById('member2').value) || 0;
+            const score3 = parseInt(document.getElementById('member3').value) || 0;
+            
+            const total = score1 + score2 + score3;
+            
+            verificationResult.style.display = 'block';
+            
+            if (total === 2026) {
+                verificationResult.className = 'verification-result success';
+                verificationResult.innerHTML = `<i class="fas fa-check-circle"></i> 恭喜！总分正好为2026分，可以成功组队！`;
+            } else if (total < 2026) {
+                verificationResult.className = 'verification-result error';
+                verificationResult.innerHTML = `<i class="fas fa-times-circle"></i> 总分${total}分，还差${2026 - total}分。需要更高的队友分数。`;
+            } else {
+                verificationResult.className = 'verification-result error';
+                verificationResult.innerHTML = `<i class="fas fa-times-circle"></i> 总分${total}分，超出${total - 2026}分。需要更低的队友分数。`;
+            }
+        }
+        
+        // 复制到剪贴板
+        function copyToClipboard() {
+            shareText.select();
+            shareText.setSelectionRange(0, 99999); // 移动设备支持
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    // 显示复制成功反馈
+                    const originalText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i> 已复制！';
+                    copyBtn.style.backgroundColor = '#34a853';
+                    
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalText;
+                        copyBtn.style.backgroundColor = '';
+                    }, 2000);
+                }
+            } catch (err) {
+                console.log('复制失败: ', err);
+                alert('复制失败，请手动选择文本并复制');
+            }
+        }
+        
+        // 事件监听器
+        calculateBtn.addEventListener('click', function() {
+            const userScore = parseInt(userScoreInput.value);
+            
+            if (isNaN(userScore) || userScore < 350 || userScore > 950) {
+                alert('请输入350-950之间的有效芝麻分！');
+                userScoreInput.focus();
+                return;
+            }
+            
+            calculateTeamOptions(userScore);
+        });
+        
+        generateBtn.addEventListener('click', function() {
+            const userScore = parseInt(userScoreInput.value);
+            
+            if (isNaN(userScore) || userScore < 350 || userScore > 950) {
+                alert('请先输入有效的芝麻分！');
+                userScoreInput.focus();
+                return;
+            }
+            
+            const neededTotal = 2026 - userScore;
+            generateTeamText(userScore, neededTotal);
+            
+            // 显示生成成功反馈
+            const originalText = generateBtn.innerHTML;
+            generateBtn.innerHTML = '<i class="fas fa-check"></i> 已生成！';
+            generateBtn.style.backgroundColor = '#2e8b47';
+            
+            setTimeout(() => {
+                generateBtn.innerHTML = originalText;
+                generateBtn.style.backgroundColor = '';
+            }, 1500);
+        });
+        
+        copyBtn.addEventListener('click', copyToClipboard);
+        
+        verifyBtn.addEventListener('click', verifyTotalScore);
+        
+        // 页面加载时自动计算（如果输入框有值）
+        window.addEventListener('load', function() {
+            const initialScore = parseInt(userScoreInput.value);
+            if (!isNaN(initialScore) && initialScore >= 350 && initialScore <= 950) {
+                calculateTeamOptions(initialScore);
+            }
+        });
+        
+        // 输入分数时实时更新队友C的分数（验证器）
+        userScoreInput.addEventListener('input', function() {
+            const userScore = parseInt(userScoreInput.value);
+            if (!isNaN(userScore) && userScore >= 350 && userScore <= 950) {
+                document.getElementById('member3').value = userScore;
+            }
+        });
+        
+        // 为验证器的输入框添加键盘事件
+        document.getElementById('member1').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') verifyTotalScore();
+        });
+        
+        document.getElementById('member2').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') verifyTotalScore();
+        });
+        
+        document.getElementById('member3').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') verifyTotalScore();
+        });
+        
+        // 用户分数输入框添加键盘事件
+        userScoreInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                calculateBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
