@@ -78,6 +78,27 @@
                     <button class="btn btn-success btn-block" onclick="matchTeams()">
                         <span class="btn-icon">🔍</span> 立即查找所有组合
                     </button>
+                    <!-- 在"立即查找所有组合"按钮下方添加 -->
+<div class="form-group" style="margin-top: 20px; margin-bottom: 20px; padding: 15px; background: #f9fbfd; border-radius: 10px;">
+    <label for="queryIdInput" style="display: block; margin-bottom: 10px; font-weight: 600; color: #1a365d;">
+        🔍 查询包含用户ID的组合
+    </label>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <input type="text" id="queryIdInput" class="form-control" 
+               placeholder="输入用户ID（如 P123456）" 
+               style="flex: 1; min-width: 200px;">
+        <button class="btn btn-primary" onclick="queryCombinations()" style="white-space: nowrap;">
+            <span class="btn-icon">🔍</span> 查询组合
+        </button>
+        <button class="btn btn-outline" onclick="clearQuery()" style="white-space: nowrap;">
+            <span class="btn-icon">↺</span> 重置
+        </button>
+    </div>
+    <small class="form-text" style="margin-top: 8px; display: block;">
+        💡 提示：输入用户ID（如 P1701234），系统将显示所有包含该用户的匹配组合
+    </small>
+</div>
+<div id="queryResult" class="match-result" style="display: none;"></div>
                     <div id="matchResult" class="match-result">
                         <div class="empty-state">
                             <div class="empty-icon">🎯</div>
