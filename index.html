@@ -25,9 +25,7 @@
                 <div class="logo">🎯 芝麻分组队系统</div>
             </div>
             <div class="nav-right">
-                <span id="userStatus">👤 未登录</span>
-                <button class="btn btn-outline" onclick="showLoginModal()">登录</button>
-                <button class="btn btn-primary" onclick="window.location.href='admin.html'">⚙️ 管理后台</button>
+                <button class="btn btn-primary" onclick="showAdminLogin()">⚙️ 管理后台</button>
             </div>
         </div>
     </nav>
@@ -44,10 +42,10 @@
 
     <div class="container main-container">
         <div class="grid">
-            <!-- 左侧：添加参与者 -->
+            <!-- 左侧：登记组队 -->
             <div class="card">
                 <div class="card-header">
-                    <h2>📋 添加参与者</h2>
+                    <h2>📋 登记组队</h2>
                 </div>
                 <div class="card-body">
                     <div class="form-group">
@@ -59,7 +57,7 @@
                         <input type="number" id="scoreInput" min="350" max="950" placeholder="例如：829" class="form-control">
                     </div>
                     <button class="btn btn-primary btn-block" onclick="addParticipant()">
-                        <span class="btn-icon">✚</span> 添加参与者
+                        <span class="btn-icon">✚</span> 登记组队
                     </button>
                 </div>
             </div>
@@ -140,6 +138,31 @@
                 </div>
                 <div id="loginError" class="error-message" style="display: none;"></div>
                 <button class="btn btn-primary btn-block" onclick="login()">登录</button>
+                <div style="text-align: center; margin-top: 15px; color: #8c8c8c; font-size: 0.9rem;">
+                    默认管理员账号: admin / admin123
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理后台登录模态框 -->
+    <div id="adminLoginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔐 管理员登录</h3>
+                <span class="close" onclick="closeAdminLoginModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="adminUsername" class="form-control" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="adminPassword" class="form-control" placeholder="请输入密码">
+                </div>
+                <div id="adminLoginError" class="error-message" style="display: none;"></div>
+                <button class="btn btn-primary btn-block" onclick="performAdminLogin()">登录</button>
                 <div style="text-align: center; margin-top: 15px; color: #8c8c8c; font-size: 0.9rem;">
                     默认管理员账号: admin / admin123
                 </div>

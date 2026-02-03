@@ -2,6 +2,7 @@
 let currentUser = null;
 let participants = [];
 let pendingDeleteId = null;
+let allCombinations = []; // 保存所有匹配组合，用于查询功能
 
 // ==================== 初始化 ====================
 document.addEventListener('DOMContentLoaded', async () => {
@@ -79,6 +80,55 @@ function logout() {
 
 function showError(message) {
     const errorEl = document.getElementById('loginError') || document.getElementById('deleteError');
+    if (errorEl) {
+        errorEl.textContent = message;
+        errorEl.style.display = 'block';
+        setTimeout(() => {
+            errorEl.style.display = 'none';
+        }, 3000);
+    }
+}
+
+// ==================== 管理后台登录功能 ====================
+function showAdminLogin() {
+    document.getElementById('adminLoginModal').style.display = 'flex';
+}
+
+function closeAdminLoginModal() {
+    document.getElementById('adminLoginModal').style.display = 'none';
+    document.getElementById('adminLoginError').style.display = 'none';
+}
+
+async function performAdminLogin() {
+    const username = document.getElementById('adminUsername').value.trim();
+    const password = document.getElementById('adminPassword').value;
+    
+    if (!username || !password) {
+        showAdminLoginError('请输入用户名和密码');
+        return;
+    }
+    
+    // 验证管理员账号
+    if (username === DEFAULT_ADMIN.username && password === DEFAULT_ADMIN.password) {
+        const currentUser = { username, role: 'admin' };
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        
+        // 关闭模态框
+        closeAdminLoginModal();
+        
+        // 清空表单
+        document.getElementById('adminUsername').value = '';
+        document.getElementById('adminPassword').value = '';
+        
+        // 跳转到管理后台
+        window.location.href = 'admin.html';
+    } else {
+        showAdminLoginError('用户名或密码错误');
+    }
+}
+
+function showAdminLoginError(message) {
+    const errorEl = document.getElementById('adminLoginError');
     if (errorEl) {
         errorEl.textContent = message;
         errorEl.style.display = 'block';
