@@ -398,7 +398,180 @@ document.addEventListener('click', (e) => {
         closeDeleteModal();
     }
 });
+// ==================== 全局变量（添加到文件顶部） ====================
+let allCombinations = []; // 保存所有匹配组合，用于查询
 
+// ==================== 查询功能（添加到文件末尾） ====================
+function queryCombinations() {
+    const queryId = document.getElementById('queryIdInput').value.trim().toUpperCase();
+    
+    if (!queryId) {
+        showToast('请输入用户ID', 'error');
+        return;
+    }
+    
+    // 验证ID格式（应以P开头+数字）
+    if (!/^P\d+$/.test(queryId)) {
+        showToast('用户ID格式错误！应为 P + 数字（如 P123456）', 'error');
+        return;
+    }
+    
+    // 检查是否已进行匹配
+    if (allCombinations.length === 0) {
+        if (confirm('尚未进行匹配，是否先执行匹配？')) {
+            matchTeams();
+            // 延迟执行查询（等待匹配完成）
+            setTimeout(() => {
+                queryCombinations();
+            }, 1000);
+        }
+        return;
+    }
+    
+    // 过滤包含该ID的组合
+    const filtered = allCombinations.filter(combo => 
+        combo.members.some(member => member.id.toUpperCase() === queryId)
+    );
+    
+    // 显示查询结果
+    renderQueryResult(filtered, queryId);
+}
+
+function renderQueryResult(combos, queryId) {
+    const resultEl = document.getElementById('queryResult');
+    const matchResultEl = document.getElementById('matchResult');
+    
+    // 隐藏常规匹配结果
+    matchResultEl.style.display = 'none';
+    // 显示查询结果区域
+    resultEl.style.display = 'block';
+    
+    if (combos.length === 0) {
+        resultEl.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #fa8c16; background: #fff7e6; border-radius: 12px;">
+                <div style="font-size: 3rem; margin-bottom: 20px;">🔍</div>
+                <h3 style="margin-bottom: 15px;">未找到包含 ${queryId} 的组合</h3>
+                <p>当前没有总分恰好等于${TARGET_SCORE}且包含该用户的组合</p>
+                <p style="margin-top: 15px; color: #8c8c8c;">
+                    💡 建议：添加更多参与者或调整分数，重新匹配
+                </p>
+                <button class="btn btn-primary" style="margin-top: 20px;" onclick="matchTeams()">
+                    <span class="btn-icon">🔄</span> 重新匹配
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = `
+        <div style="text-align: center; margin-bottom: 25px; padding: 20px; background: linear-gradient(135deg, #e6f7ff 0%, #f6ffed 100%); border-radius: 12px;">
+            <div style="font-size: 2.2rem; color: #1890ff; font-weight: bold; margin-bottom: 10px;">
+                🎯 找到 ${combos.length} 个包含 ${queryId} 的组合
+            </div>
+            <div style="color: #595959; font-size: 1.1rem;">
+                以下组合总分恰好等于 ${TARGET_SCORE} 分，且包含用户 ${queryId}
+            </div>
+        </div>
+    `;
+    
+    combos.forEach((combo, index) => {
+        // 高亮显示查询的用户
+        const membersHtml = combo.members.map(member => {
+            const isTarget = member.id.toUpperCase() === queryId;
+            return `
+                <div class="member-item" style="${isTarget ? 'border: 3px solid #1890ff; transform: scale(1.05);' : ''}">
+                    ${isTarget ? '<div style="position: absolute; top: -10px; right: -10px; background: #ff4d4f; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;">!</div>' : ''}
+                    <div class="member-id" style="${isTarget ? 'background: #1890ff; color: white;' : ''}">${member.id}</div>
+                    <div class="member-name" style="${isTarget ? 'color: #1890ff; font-weight: bold;' : ''}">${member.name}</div>
+                    <div class="member-score" style="${isTarget ? 'color: #1890ff;' : ''}">${member.score}</div>
+                </div>
+            `;
+        }).join('');
+        
+        html += `
+            <div class="combo-card" style="border-left: 5px solid #1890ff;">
+                <div class="combo-header">
+                    <div class="combo-index" style="background: linear-gradient(120deg, #1890ff 0%, #40a9ff 100%);">
+                        组合 #${index + 1}
+                    </div>
+                    <div class="combo-total">${TARGET_SCORE} 分</div>
+                </div>
+                <div class="combo-members">
+                    ${membersHtml}
+                </div>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #e8e8e8; text-align: center; color: #8c8c8c; font-size: 0.95rem;">
+                    <strong>成员ID:</strong> ${combo.members.map(m => m.id).join(', ')}
+                </div>
+            </div>
+        `;
+    });
+    
+    // 添加返回按钮
+    html += `
+        <div style="text-align: center; margin-top: 25px;">
+            <button class="btn btn-outline" onclick="clearQuery()" style="padding: 10px 25px;">
+                <span class="btn-icon">←</span> 返回全部结果
+            </button>
+        </div>
+    `;
+    
+    resultEl.innerHTML = html;
+}
+
+function clearQuery() {
+    document.getElementById('queryIdInput').value = '';
+    document.getElementById('queryResult').style.display = 'none';
+    document.getElementById('matchResult').style.display = 'block';
+}
+
+// ==================== 修改 matchTeams 函数（保存所有组合） ====================
+// 找到 matchTeams 函数，修改如下：
+async function matchTeams() {
+    if (participants.length === 0) {
+        showToast('请先添加参与者', 'error');
+        return;
+    }
+    
+    if (participants.length === 1) {
+        showToast('至少需要2个参与者才能匹配', 'error');
+        return;
+    }
+    
+    const combos = findAllPerfectCombinations(participants, TARGET_SCORE);
+    
+    // 保存所有组合（用于查询）
+    allCombinations = combos;
+    
+    renderMatchResult(combos);
+}
+
+// ==================== 修改 renderMatchResult 函数（添加重置提示） ====================
+// 找到 renderMatchResult 函数，在成功渲染后添加：
+function renderMatchResult(combos) {
+    const resultEl = document.getElementById('matchResult');
+    const queryResultEl = document.getElementById('queryResult');
+    
+    // 隐藏查询结果
+    queryResultEl.style.display = 'none';
+    
+    // ... [原有渲染代码保持不变] ...
+    
+    // 在函数末尾添加（在 resultEl.innerHTML = html 之后）：
+    // 添加提示：可以查询特定用户
+    if (combos.length > 0) {
+        const promptHtml = `
+            <div style="margin-top: 30px; padding: 15px; background: #e6f7ff; border-radius: 10px; border-left: 4px solid #1890ff;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="font-size: 1.5rem;">💡</div>
+                    <div>
+                        <strong>快速查询：</strong>在上方输入用户ID（如 P123456），即可查看该用户参与的所有匹配组合
+                    </div>
+                </div>
+            </div>
+        `;
+        resultEl.innerHTML += promptHtml;
+    }
+}
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         closeLoginModal();
