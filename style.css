@@ -161,7 +161,22 @@ label {
     font-weight: 500;
     color: #595959;
 }
+/* 查询输入框特殊样式 */
+#queryIdInput {
+    font-weight: 600;
+    letter-spacing: 1px;
+}
 
+#queryIdInput:focus {
+    border-color: #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* 查询结果高亮 */
+.member-item {
+    position: relative;
+    transition: all 0.3s;
+}
 .required {
     color: #ff4d4f;
 }
