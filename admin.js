@@ -1,3 +1,7 @@
+if (!window.sesameUtils || !window.sesameUtils.isSupabaseReady()) {
+    alert('❌ 数据库未连接！请检查 config.js 配置');
+    return;
+}
 // ==================== 全局变量 ====================
 let adminUser = null;
 
@@ -244,37 +248,36 @@ async function deleteParticipant(id, name) {
     }
     
     try {
-        // 查找参与者
-        const { data: participantData, error: fetchError } = await supabase
+        // 记录审计日志
+        const { data: participantData } = await supabase
             .from('participants')
             .select('*')
             .eq('id', id)
             .single();
         
-        if (fetchError) throw fetchError;
-        
-        // 记录审计日志
-        await supabase.from('audit_log').insert([{
-            participant_id: participantData.id,
-            participant_name: participantData.name,
-            participant_score: participantData.score,
-            delete_reason: reason,
-            deleted_at: new Date().toISOString()
-        }]);
-        
-        // 删除参与者
-        const { error } = await supabase
-            .from('participants')
-            .delete()
-            .eq('id', id);
-        
-        if (error) throw error;
-        
-        alert(`✅ ${name} 已删除\n📝 原因: ${reason}`);
-        
-        // 重新加载数据
-        await loadParticipantsTable();
-        await loadDashboardData();
+        if (participantData) {
+            await supabase.from('audit_log').insert([{
+                participant_id: participantData.id,
+                participant_name: participantData.name,
+                participant_score: participantData.score,
+                delete_reason: reason,
+                deleted_at: new Date().toISOString()
+            }]);
+            
+            // 删除参与者
+            const { error } = await supabase
+                .from('participants')
+                .delete()
+                .eq('id', id);
+            
+            if (error) throw error;
+            
+            alert(`✅ ${name} 已删除\n📝 原因: ${reason}`);
+            
+            // 重新加载数据
+            await loadParticipantsTable();
+            await loadDashboardData();
+        }
     } catch (error) {
         console.error('删除失败:', error);
         alert('删除失败，请重试');
@@ -308,7 +311,7 @@ async function bulkDelete() {
         for (const checkbox of checked) {
             const id = checkbox.value;
             
-            // 查找参与者
+            // 记录审计日志
             const { data: participantData } = await supabase
                 .from('participants')
                 .select('*')
@@ -316,7 +319,6 @@ async function bulkDelete() {
                 .single();
             
             if (participantData) {
-                // 记录审计日志
                 await supabase.from('audit_log').insert([{
                     participant_id: participantData.id,
                     participant_name: participantData.name,
