@@ -1,0 +1,387 @@
+// ==================== 全局变量 ====================
+let adminUser = null;
+
+// ==================== 初始化 ====================
+document.addEventListener('DOMContentLoaded', async () => {
+    // 检查管理员登录状态
+    checkAdminLogin();
+    
+    if (!adminUser) {
+        window.location.href = 'index.html';
+        return;
+    }
+    
+    // 加载数据
+    await loadDashboardData();
+    await loadParticipantsTable();
+    await loadAuditLog();
+    
+    // 检查数据库连接
+    checkDatabaseConnection();
+});
+
+function checkAdminLogin() {
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+        const user = JSON.parse(savedUser);
+        if (user.role === 'admin') {
+            adminUser = user;
+            document.getElementById('adminUserStatus').textContent = `👤 ${user.username}`;
+            return;
+        }
+    }
+    
+    // 未登录或非管理员，跳转到首页
+    window.location.href = 'index.html';
+}
+
+// ==================== 数据加载 ====================
+async function loadDashboardData() {
+    try {
+        // 加载参与者总数
+        const { count: participantCount, error: pError } = await supabase
+            .from('participants')
+            .select('*', { count: 'exact', head: true });
+        
+        if (!pError) {
+            document.getElementById('totalParticipants').textContent = participantCount || 0;
+        }
+        
+        // 加载审计日志总数
+        const { count: auditCount, error: aError } = await supabase
+            .from('audit_log')
+            .select('*', { count: 'exact', head: true });
+        
+        if (!aError) {
+            document.getElementById('totalDeleted').textContent = auditCount || 0;
+        }
+        
+        // 加载用户总数（这里简化为1个管理员）
+        document.getElementById('totalUsers').textContent = '1';
+        
+        // 计算有效组合数
+        const { data: participantsData } = await supabase
+            .from('participants')
+            .select('*');
+        
+        if (participantsData) {
+            const combos = findAllPerfectCombinations(participantsData, 2026);
+            document.getElementById('totalCombinations').textContent = combos.length;
+        }
+    } catch (error) {
+        console.error('加载仪表盘数据失败:', error);
+    }
+}
+
+async function loadParticipantsTable() {
+    try {
+        const { data, error } = await supabase
+            .from('participants')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        renderParticipantsTable(data || []);
+    } catch (error) {
+        console.error('加载参与者表格失败:', error);
+    }
+}
+
+function renderParticipantsTable(data) {
+    const tbody = document.getElementById('participantsTableBody');
+    
+    if (data.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 40px;">
+                    <div style="font-size: 2rem; margin-bottom: 15px;">👥</div>
+                    <p>暂无参与者数据</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = data.map(p => `
+        <tr>
+            <td><input type="checkbox" class="row-checkbox" value="${p.id}"></td>
+            <td>${p.id}</td>
+            <td>${p.name}</td>
+            <td>${p.score}</td>
+            <td>${formatDate(p.created_at)}</td>
+            <td>
+                <button class="btn btn-sm btn-danger" onclick="deleteParticipant('${p.id}', '${p.name}')">
+                    删除
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function loadAuditLog() {
+    try {
+        const { data, error } = await supabase
+            .from('audit_log')
+            .select('*')
+            .order('deleted_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        renderAuditLogTable(data || []);
+    } catch (error) {
+        console.error('加载审计日志失败:', error);
+    }
+}
+
+function renderAuditLogTable(data) {
+    const tbody = document.getElementById('auditLogTableBody');
+    
+    if (data.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 40px;">
+                    <div style="font-size: 2rem; margin-bottom: 15px;">📝</div>
+                    <p>暂无删除记录</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = data.map(log => `
+        <tr>
+            <td>${log.participant_id}</td>
+            <td>${log.participant_name}</td>
+            <td>${log.delete_reason}</td>
+            <td>${formatDate(log.deleted_at)}</td>
+        </tr>
+    `).join('');
+}
+
+// ==================== 数据库连接检查 ====================
+async function checkDatabaseConnection() {
+    try {
+        const { data, error } = await supabase
+            .from('participants')
+            .select('id')
+            .limit(1);
+        
+        if (error) throw error;
+        
+        document.getElementById('dbStatus').className = 'status-badge status-success';
+        document.getElementById('dbStatus').textContent = '✅ 连接正常';
+    } catch (error) {
+        console.error('数据库连接失败:', error);
+        document.getElementById('dbStatus').className = 'status-badge status-error';
+        document.getElementById('dbStatus').textContent = '❌ 连接失败';
+    }
+}
+
+// ==================== 工具函数 ====================
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function findAllPerfectCombinations(participants, target) {
+    const n = participants.length;
+    const allCombos = [];
+    
+    for (let size = 2; size <= Math.min(6, n); size++) {
+        const combos = getCombinations(participants, size);
+        
+        for (let combo of combos) {
+            const total = combo.reduce((sum, p) => sum + p.score, 0);
+            if (total === target) {
+                allCombos.push({
+                    members: combo,
+                    totalScore: total
+                });
+            }
+        }
+    }
+    
+    return allCombos;
+}
+
+function getCombinations(arr, size) {
+    const result = [];
+    
+    function helper(start, combo) {
+        if (combo.length === size) {
+            result.push([...combo]);
+            return;
+        }
+        
+        for (let i = start; i < arr.length; i++) {
+            combo.push(arr[i]);
+            helper(i + 1, combo);
+            combo.pop();
+        }
+    }
+    
+    helper(0, []);
+    return result;
+}
+
+// ==================== 管理员操作 ====================
+async function deleteParticipant(id, name) {
+    if (!confirm(`确定要删除 ${name} (${id}) 吗？\n\n注意：此操作将记录到审计日志，不可恢复！`)) {
+        return;
+    }
+    
+    const reason = prompt('请输入删除原因（至少5个字）：');
+    if (!reason || reason.length < 5) {
+        alert('删除原因至少需要5个字');
+        return;
+    }
+    
+    try {
+        // 查找参与者
+        const { data: participantData, error: fetchError } = await supabase
+            .from('participants')
+            .select('*')
+            .eq('id', id)
+            .single();
+        
+        if (fetchError) throw fetchError;
+        
+        // 记录审计日志
+        await supabase.from('audit_log').insert([{
+            participant_id: participantData.id,
+            participant_name: participantData.name,
+            participant_score: participantData.score,
+            delete_reason: reason,
+            deleted_at: new Date().toISOString()
+        }]);
+        
+        // 删除参与者
+        const { error } = await supabase
+            .from('participants')
+            .delete()
+            .eq('id', id);
+        
+        if (error) throw error;
+        
+        alert(`✅ ${name} 已删除\n📝 原因: ${reason}`);
+        
+        // 重新加载数据
+        await loadParticipantsTable();
+        await loadDashboardData();
+    } catch (error) {
+        console.error('删除失败:', error);
+        alert('删除失败，请重试');
+    }
+}
+
+function toggleSelectAll() {
+    const checkboxes = document.querySelectorAll('.row-checkbox');
+    const selectAll = document.getElementById('selectAll').checked;
+    checkboxes.forEach(cb => cb.checked = selectAll);
+}
+
+async function bulkDelete() {
+    const checked = document.querySelectorAll('.row-checkbox:checked');
+    if (checked.length === 0) {
+        alert('请先选择要删除的参与者');
+        return;
+    }
+    
+    if (!confirm(`确定要批量删除选中的 ${checked.length} 个参与者吗？`)) {
+        return;
+    }
+    
+    const reason = prompt('请输入批量删除原因（至少5个字）：');
+    if (!reason || reason.length < 5) {
+        alert('删除原因至少需要5个字');
+        return;
+    }
+    
+    try {
+        for (const checkbox of checked) {
+            const id = checkbox.value;
+            
+            // 查找参与者
+            const { data: participantData } = await supabase
+                .from('participants')
+                .select('*')
+                .eq('id', id)
+                .single();
+            
+            if (participantData) {
+                // 记录审计日志
+                await supabase.from('audit_log').insert([{
+                    participant_id: participantData.id,
+                    participant_name: participantData.name,
+                    participant_score: participantData.score,
+                    delete_reason: reason,
+                    deleted_at: new Date().toISOString()
+                }]);
+                
+                // 删除参与者
+                await supabase
+                    .from('participants')
+                    .delete()
+                    .eq('id', id);
+            }
+        }
+        
+        alert(`✅ 批量删除完成（${checked.length} 个）\n📝 原因: ${reason}`);
+        
+        // 重新加载数据
+        await loadParticipantsTable();
+        await loadDashboardData();
+    } catch (error) {
+        console.error('批量删除失败:', error);
+        alert('批量删除失败，请重试');
+    }
+}
+
+function clearLocalStorage() {
+    if (confirm('确定要清除本地缓存吗？\n这不会影响云端数据。')) {
+        localStorage.clear();
+        alert('✅ 本地缓存已清除');
+    }
+}
+
+async function exportAllData() {
+    try {
+        // 加载所有数据
+        const { data: participantsData } = await supabase
+            .from('participants')
+            .select('*');
+        
+        const { data: auditLogData } = await supabase
+            .from('audit_log')
+            .select('*');
+        
+        const exportData = {
+            exportTime: new Date().toISOString(),
+            participants: participantsData || [],
+            auditLog: auditLogData || [],
+            totalParticipants: participantsData?.length || 0,
+            totalDeleted: auditLogData?.length || 0
+        };
+        
+        // 生成JSON文件
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+        
+        const link = document.createElement('a');
+        link.setAttribute('href', dataUri);
+        link.setAttribute('download', `sesame_export_${new Date().toISOString().slice(0,10)}.json`);
+        link.click();
+        
+        alert(`✅ 数据导出成功\n- 参与者: ${exportData.totalParticipants} 人\n- 删除记录: ${exportData.totalDeleted} 条`);
+    } catch (error) {
+        console.error('导出数据失败:', error);
+        alert('导出失败，请重试');
+    }
+}
