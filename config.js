@@ -7,52 +7,47 @@ const SUPABASE_URL = 'https://xinqzxrulxtermoifija.supabase.co';
 // 2. 替换为您的 anon public key（在 Project Settings → API 中获取）
 const SUPABASE_ANON_KEY = 'xinqzxrulxtermoifija';
 
-// 3. 创建唯一客户端实例（避免与全局 supabase 命名空间冲突）
-window.sesameSupabase = null;
-try {
-    // 从全局 supabase 命名空间获取 createClient 方法
-    const { createClient } = supabase;
-    window.sesameSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('✅ Supabase 客户端初始化成功');
-} catch (error) {
-    console.error('❌ Supabase 初始化失败:', error);
-    alert('数据库配置错误！请检查 config.js 中的 SUPABASE_URL 和 SUPABASE_ANON_KEY');
+// 3. 创建 Supabase 客户端（使用全局 supabase 命名空间，避免重复声明）
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// 4. 全局配置
+const DEFAULT_ADMIN = {
+    username: 'admin',
+    password: 'admin123'
+};
+
+const TARGET_SCORE = 2026;
+
+// 5. 工具函数
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 }
 
-// 4. 全局配置（挂载到 window 避免作用域问题）
-window.SESAME_CONFIG = {
-    DEFAULT_ADMIN: {
-        username: 'admin',
-        password: 'admin123'
-    },
-    TARGET_SCORE: 2026
-};
-
-// 5. 全局工具函数
-window.sesameUtils = {
-    formatDate: function(dateString) {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        return date.toLocaleString('zh-CN', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    },
-    
-    showToast: function(message, type = 'success') {
-        if (type === 'error') {
-            alert('❌ ' + message);
-        } else {
-            alert('✅ ' + message);
-        }
-    },
-    
-    // 检查 Supabase 是否就绪
-    isSupabaseReady: function() {
-        return window.sesameSupabase !== null && 
-               typeof window.sesameSupabase.from === 'function';
+function showToast(message, type = 'success') {
+    if (type === 'error') {
+        alert('❌ ' + message);
+    } else {
+        alert('✅ ' + message);
     }
-};
+}
+
+// 6. 检查 Supabase 是否就绪
+function isSupabaseReady() {
+    return supabaseClient !== null && typeof supabaseClient.from === 'function';
+}
+
+// 7. 初始化检查
+if (isSupabaseReady()) {
+    console.log('✅ Supabase 客户端初始化成功');
+} else {
+    console.error('❌ Supabase 初始化失败');
+    alert('数据库配置错误！请检查 config.js 中的 SUPABASE_URL 和 SUPABASE_ANON_KEY');
+}
