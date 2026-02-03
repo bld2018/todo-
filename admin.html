@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - 芝麻分精准匹配系统</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar admin-navbar">
+        <div class="container">
+            <div class="nav-left">
+                <div class="logo">⚙️ 管理后台</div>
+            </div>
+            <div class="nav-right">
+                <span id="adminUserStatus">👤 管理员</span>
+                <button class="btn btn-outline" onclick="logout()">退出登录</button>
+                <button class="btn btn-outline" onclick="window.location.href='index.html'">🏠 返回首页</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container main-container">
+        <div class="admin-grid">
+            <!-- 统计卡片 -->
+            <div class="stat-cards">
+                <div class="stat-card stat-card-blue">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-content">
+                        <div class="stat-label">总参与者</div>
+                        <div class="stat-value" id="totalParticipants">0</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-green">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-label">有效组合</div>
+                        <div class="stat-value" id="totalCombinations">0</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-orange">
+                    <div class="stat-icon">🗑️</div>
+                    <div class="stat-content">
+                        <div class="stat-label">已删除记录</div>
+                        <div class="stat-value" id="totalDeleted">0</div>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-purple">
+                    <div class="stat-icon">👤</div>
+                    <div class="stat-content">
+                        <div class="stat-label">注册用户</div>
+                        <div class="stat-value" id="totalUsers">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 参与者管理 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>📋 参与者管理</h2>
+                    <button class="btn btn-sm btn-danger" onclick="bulkDelete()">批量删除</button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                                    <th>ID</th>
+                                    <th>姓名</th>
+                                    <th>芝麻分</th>
+                                    <th>添加时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="participantsTableBody">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 40px;">
+                                        <div style="font-size: 2rem; margin-bottom: 15px;">👥</div>
+                                        <p>暂无参与者数据</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 审计日志 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>🔒 审计日志（不可删除）</h2>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>参与者ID</th>
+                                    <th>姓名</th>
+                                    <th>删除原因</th>
+                                    <th>删除时间</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditLogTableBody">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; padding: 40px;">
+                                        <div style="font-size: 2rem; margin-bottom: 15px;">📝</div>
+                                        <p>暂无删除记录</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统设置 -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>⚙️ 系统设置</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>目标分数</label>
+                        <input type="number" id="targetScore" class="form-control" value="2026" disabled>
+                        <small class="form-text">当前匹配目标分数（系统默认2026）</small>
+                    </div>
+                    <div class="form-group">
+                        <label>数据库状态</label>
+                        <div id="dbStatus" class="status-badge status-success">✅ 连接正常</div>
+                    </div>
+                    <button class="btn btn-warning" onclick="clearLocalStorage()">
+                        <span class="btn-icon">🧹</span> 清除本地缓存
+                    </button>
+                    <button class="btn btn-danger" onclick="exportAllData()" style="margin-left: 10px;">
+                        <span class="btn-icon">📤</span> 导出全部数据
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 芝麻分精准匹配系统 | 管理后台</p>
+        </div>
+    </footer>
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
