@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试页面</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+</head>
+<body>
+    <h1>测试页面</h1>
+    <div id="status">检查中...</div>
+    <div id="data"></div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const statusEl = document.getElementById('status');
+            const dataEl = document.getElementById('data');
+            
+            statusEl.innerHTML = '检查Supabase连接...';
+            
+            try {
+                // 检查Supabase连接
+                if (!isSupabaseReady()) {
+                    statusEl.innerHTML = '❌ Supabase连接失败';
+                    return;
+                }
+                
+                statusEl.innerHTML = '✅ Supabase连接成功<br>获取数据中...';
+                
+                // 尝试获取数据
+                console.log('尝试获取参与者数据...');
+                const { data, error } = await supabaseClient
+                    .from('participants')
+                    .select('*')
+                    .limit(10);
+                
+                console.log('数据库响应:', { data, error });
+                
+                if (error) {
+                    statusEl.innerHTML = `❌ 数据库错误: ${error.message}`;
+                    return;
+                }
+                
+                statusEl.innerHTML = `✅ 成功获取 ${data?.length || 0} 条数据`;
+                
+                if (data && data.length > 0) {
+                    dataEl.innerHTML = '<h2>数据内容:</h2><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } else {
+                    dataEl.innerHTML = '<p>暂无数据</p>';
+                }
+                
+            } catch (error) {
+                console.error('测试失败:', error);
+                statusEl.innerHTML = `❌ 测试失败: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>

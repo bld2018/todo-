@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最小测试版本</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .participant { padding: 10px; border: 1px solid #ddd; margin: 5px 0; }
+        .loading { color: #1890ff; }
+        .error { color: #ff4d4f; }
+        .success { color: #52c41a; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>芝麻分匹配系统 - 最小版本</h1>
+        
+        <div id="status" class="loading">初始化中...</div>
+        
+        <h2>参与者列表 (<span id="count">0</span>)</h2>
+        <div id="participants"></div>
+        
+        <h2>添加新参与者</h2>
+        <div>
+            <input type="text" id="nameInput" placeholder="小红书号">
+            <input type="number" id="scoreInput" placeholder="芝麻分" min="350" max="950">
+            <button onclick="addParticipant()">添加</button>
+        </div>
+    </div>
+
+    <script>
+        let participants = [];
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const statusEl = document.getElementById('status');
+            
+            try {
+                statusEl.textContent = '检查数据库连接...';
+                statusEl.className = 'loading';
+                
+                if (!isSupabaseReady()) {
+                    throw new Error('Supabase连接失败');
+                }
+                
+                statusEl.textContent = '加载数据...';
+                await loadData();
+                
+                statusEl.textContent = '加载完成';
+                statusEl.className = 'success';
+                
+            } catch (error) {
+                console.error('初始化失败:', error);
+                statusEl.textContent = '错误: ' + error.message;
+                statusEl.className = 'error';
+            }
+        });
+        
+        async function loadData() {
+            const { data, error } = await supabaseClient
+                .from('participants')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            
+            participants = data || [];
+            renderParticipants();
+            updateCount();
+        }
+        
+        function renderParticipants() {
+            const container = document.getElementById('participants');
+            
+            if (participants.length === 0) {
+                container.innerHTML = '<p>暂无参与者</p>';
+                return;
+            }
+            
+            container.innerHTML = participants.map(p => `
+                <div class="participant">
+                    <strong>ID:</strong> ${p.id} | 
+                    <strong>小红书号:</strong> ${p.name} | 
+                    <strong>芝麻分:</strong> ${p.score}
+                </div>
+            `).join('');
+        }
+        
+        function updateCount() {
+            document.getElementById('count').textContent = participants.length;
+        }
+        
+        async function addParticipant() {
+            const nameInput = document.getElementById('nameInput');
+            const scoreInput = document.getElementById('scoreInput');
+            
+            const name = nameInput.value.trim();
+            const score = parseInt(scoreInput.value);
+            
+            if (!name || isNaN(score)) {
+                alert('请填写完整信息');
+                return;
+            }
+            
+            try {
+                const participantId = 'P' + String(Date.now()).slice(-6);
+                
+                const { error } = await supabaseClient
+                    .from('participants')
+                    .insert([{
+                        id: participantId,
+                        name: name,
+                        score: score,
+                        created_at: new Date().toISOString()
+                    }]);
+                
+                if (error) throw error;
+                
+                nameInput.value = '';
+                scoreInput.value = '';
+                
+                await loadData();
+                alert('添加成功!');
+                
+            } catch (error) {
+                console.error('添加失败:', error);
+                alert('添加失败: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
