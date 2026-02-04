@@ -278,15 +278,21 @@ function setButtonLoading(buttonId, loading) {
 
 // ==================== 小红书号验证函数 ====================
 function isValidXiaohongshuId(name) {
-    // 验证是否为纯数字编码
-    return /^\d+$/.test(name);
+    // 验证是否为有效的编码格式（支持字母数字混合）
+    // 允许：纯数字、字母数字混合、下划线、连字符等常见编码格式
+    return /^[a-zA-Z0-9_-]+$/.test(name) && name.length >= 3;
 }
 
 function getXiaohongshuIdStyle(name) {
-    // 如果不是纯数字编码，返回红色样式
-    if (!isValidXiaohongshuId(name)) {
+    // 专门处理TEST标记的测试ID，确保显示红色
+    if (name && name.toUpperCase() === 'TEST') {
         return 'color: #ff4d4f; font-weight: bold; background: #fff1f0; padding: 2px 6px; border-radius: 4px;';
     }
+    // 对ID位数小于9的也标记红色
+    if (name && name.length < 9) {
+        return 'color: #ff4d4f; font-weight: bold; background: #fff1f0; padding: 2px 6px; border-radius: 4px;';
+    }
+    // 对于其他情况，正常显示
     return '';
 }
 

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小红书ID格式测试</title>
+    <script src="config.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-case { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+        .valid { background-color: #e8f5e9; border-color: #52c41a; }
+        .invalid { background-color: #fff1f0; border-color: #ff4d4f; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+        button { padding: 8px 15px; background: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>小红书ID格式验证测试</h1>
+    
+    <div>
+        <h2>实时测试</h2>
+        <input type="text" id="testInput" placeholder="输入小红书ID进行测试" oninput="testId()">
+        <div id="result"></div>
+    </div>
+    
+    <div>
+        <h2>预设测试用例</h2>
+        <button onclick="runAllTests()">运行所有测试</button>
+        <div id="testResults"></div>
+    </div>
+
+    <script>
+        function testId() {
+            const input = document.getElementById('testInput').value.trim();
+            const result = document.getElementById('result');
+            
+            if (!input) {
+                result.innerHTML = '';
+                return;
+            }
+            
+            const isValid = isValidXiaohongshuId(input);
+            const style = getXiaohongshuIdStyle(input);
+            
+            result.innerHTML = `
+                <div class="test-case ${isValid ? 'valid' : 'invalid'}">
+                    <strong>输入:</strong> ${input}<br>
+                    <strong>验证结果:</strong> ${isValid ? '✅ 有效' : '❌ 无效'}<br>
+                    <strong>样式:</strong> ${style || '默认样式'}
+                </div>
+            `;
+        }
+        
+        function runAllTests() {
+            const testCases = [
+                '123456789',           // 纯数字 - 应该有效
+                'abc123',              // 字母数字混合 - 应该有效
+                'user_name',           // 下划线 - 应该有效
+                'test-user',           // 连字符 - 应该有效
+                'ABC123XYZ',          // 大写字母数字 - 应该有效
+                'a1b2c3d4e5',         // 长字母数字 - 应该有效
+                '',                    // 空字符串 - 应该无效
+                'ab',                  // 太短 - 应该无效
+                'user@name',           // 特殊字符 - 应该无效
+                '测试中文',             // 中文 - 应该无效
+                'user name',           // 空格 - 应该无效
+                '!@#$%',              // 特殊符号 - 应该无效
+            ];
+            
+            const results = document.getElementById('testResults');
+            results.innerHTML = '<h3>测试结果:</h3>';
+            
+            testCases.forEach(testCase => {
+                const isValid = isValidXiaohongshuId(testCase);
+                const style = getXiaohongshuIdStyle(testCase);
+                
+                results.innerHTML += `
+                    <div class="test-case ${isValid ? 'valid' : 'invalid'}">
+                        <strong>输入:</strong> "${testCase}"<br>
+                        <strong>预期:</strong> ${testCase && /^[a-zA-Z0-9_-]+$/.test(testCase) && testCase.length >= 3 ? '有效' : '无效'}<br>
+                        <strong>实际:</strong> ${isValid ? '✅ 有效' : '❌ 无效'}<br>
+                        <strong>样式:</strong> ${style || '默认样式'}
+                    </div>
+                `;
+            });
+        }
+        
+        // 页面加载完成后运行测试
+        document.addEventListener('DOMContentLoaded', function() {
+            runAllTests();
+        });
+    </script>
+</body>
+</html>

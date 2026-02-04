@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEST标记红色显示测试</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        .test-section { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+        }
+        .test-case { 
+            margin: 10px 0; 
+            padding: 10px; 
+            border-left: 4px solid #1890ff; 
+            background: #f0f8ff; 
+        }
+        .red-marked { 
+            border-left-color: #ff4d4f; 
+            background: #fff1f0; 
+        }
+        .normal-display { 
+            border-left-color: #52c41a; 
+            background: #f6ffed; 
+        }
+        input { 
+            padding: 8px; 
+            margin: 5px; 
+            width: 200px; 
+            border: 1px solid #d9d9d9; 
+            border-radius: 4px; 
+        }
+        button { 
+            padding: 8px 15px; 
+            background: #1890ff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px; 
+        }
+        button:hover { 
+            background: #40a9ff; 
+        }
+        .result-box { 
+            margin: 10px 0; 
+            padding: 15px; 
+            border-radius: 6px; 
+        }
+        .success { 
+            background: #f6ffed; 
+            border: 1px solid #b7eb8f; 
+            color: #389e0d; 
+        }
+        .warning { 
+            background: #fffbe6; 
+            border: 1px solid #ffe58f; 
+            color: #d48806; 
+        }
+        .error { 
+            background: #fff1f0; 
+            border: 1px solid #ffa39e; 
+            color: #cf1322; 
+        }
+        .demo-area {
+            margin: 20px 0;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 8px;
+            border: 1px dashed #ccc;
+        }
+        .demo-id {
+            display: inline-block;
+            margin: 5px 10px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔴 TEST标记红色显示专项测试</h1>
+        <p>验证TEST标记的ID是否正确显示红色样式</p>
+        
+        <div class="test-section">
+            <h2>🔍 实时测试</h2>
+            <input type="text" id="testInput" placeholder="输入ID测试红色标记" oninput="testRedMarking()">
+            <button onclick="testRedMarking()">测试</button>
+            <div id="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📋 预设测试用例</h2>
+            <button onclick="runTestCases()">运行测试用例</button>
+            <button onclick="showDemoDisplay()">显示演示效果</button>
+            <div id="testResults"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🎭 演示区域</h2>
+            <div class="demo-area">
+                <h3>不同ID类型的显示效果：</h3>
+                <div id="demoDisplay"></div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📊 验证规则</h2>
+            <div class="result-box success">
+                <h3>✅ 应该显示红色的ID：</h3>
+                <ul>
+                    <li><strong>TEST</strong> (完全匹配)</li>
+                    <li><strong>test</strong> (小写)</li>
+                    <li><strong>Test</strong> (首字母大写)</li>
+                    <li><strong>tesT</strong> (混合大小写)</li>
+                    <li><strong>TESt</strong> (其他大小写组合)</li>
+                </ul>
+            </div>
+            <div class="result-box warning">
+                <h3>✅ 应该正常显示的ID：</h3>
+                <ul>
+                    <li>纯数字：123456789</li>
+                    <li>字母数字混合：abc123, ABC123XYZ</li>
+                    <li>带特殊字符：user_name, test-user</li>
+                    <li>其他无效格式：空字符串、太短、特殊符号等</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function testRedMarking() {
+            const input = document.getElementById('testInput').value.trim();
+            const result = document.getElementById('result');
+            
+            if (!input) {
+                result.innerHTML = '<div class="result-box warning">请输入要测试的ID</div>';
+                return;
+            }
+            
+            const style = getXiaohongshuIdStyle(input);
+            const isTestMarked = input.toUpperCase() === 'TEST';
+            
+            let statusHtml = '';
+            let testCaseClass = '';
+            
+            if (isTestMarked) {
+                statusHtml = '<span class="result-box error">🔴 正确！这是TEST标记的ID，应该显示红色</span>';
+                testCaseClass = 'red-marked';
+            } else {
+                statusHtml = '<span class="result-box success">✅ 正常！这不是TEST标记的ID</span>';
+                testCaseClass = 'normal-display';
+            }
+            
+            result.innerHTML = `
+                <div class="test-case ${testCaseClass}">
+                    <strong>输入:</strong> ${input}<br>
+                    <strong>ID类型:</strong> ${isTestMarked ? 'TEST测试ID' : '普通ID'}<br>
+                    <strong>样式:</strong> ${style || '默认样式'}<br>
+                    <strong>显示效果:</strong> <span style="${style}">${input || '(空)'}</span><br>
+                    ${statusHtml}
+                </div>
+            `;
+        }
+        
+        function runTestCases() {
+            const testCases = [
+                'TEST',           // 应该红色标记
+                'test',           // 应该红色标记
+                'Test',           // 应该红色标记
+                'tesT',           // 应该红色标记
+                'TESt',           // 应该红色标记
+                '123456789',      // 应该正常显示
+                'abc123',         // 应该正常显示
+                'user_name',      // 应该正常显示
+                'test-user',      // 应该正常显示
+                '',               // 应该正常显示
+                'ab',             // 应该正常显示
+                'user@name'       // 应该正常显示
+            ];
+            
+            const results = document.getElementById('testResults');
+            results.innerHTML = '<h3>测试结果:</h3>';
+            
+            testCases.forEach(testCase => {
+                const style = getXiaohongshuIdStyle(testCase);
+                const isTestMarked = testCase && testCase.toUpperCase() === 'TEST';
+                
+                let statusClass = isTestMarked ? 'red-marked' : 'normal-display';
+                let statusText = isTestMarked ? '🔴 TEST标记(红色)' : '✅ 普通ID(正常)';
+                
+                results.innerHTML += `
+                    <div class="test-case ${statusClass}">
+                        <strong>输入:</strong> "${testCase}"<br>
+                        <strong>ID类型:</strong> ${isTestMarked ? 'TEST测试ID' : '普通ID'}<br>
+                        <strong>样式:</strong> ${style || '默认样式'}<br>
+                        <strong>显示效果:</strong> <span style="${style}">${testCase || '(空)'}</span><br>
+                        <strong>验证结果:</strong> ${statusText}
+                    </div>
+                `;
+            });
+        }
+        
+        function showDemoDisplay() {
+            const demoIds = [
+                { id: 'TEST', label: 'TEST标记' },
+                { id: 'test', label: '小写test' },
+                { id: 'normal_user123', label: '普通用户' },
+                { id: 'ABC123XYZ', label: '字母数字' },
+                { id: 'user_name', label: '带下划线' }
+            ];
+            
+            const demoDisplay = document.getElementById('demoDisplay');
+            let html = '';
+            
+            demoIds.forEach(item => {
+                const style = getXiaohongshuIdStyle(item.id);
+                const isTest = item.id.toUpperCase() === 'TEST';
+                const bgColor = isTest ? '#ff4d4f' : '#52c41a';
+                const textColor = isTest ? 'white' : 'white';
+                
+                html += `
+                    <div class="demo-id" style="background: ${bgColor}; color: ${textColor};">
+                        ${item.label}: <span style="${style}">${item.id}</span>
+                    </div>
+                `;
+            });
+            
+            demoDisplay.innerHTML = html;
+        }
+        
+        // 页面加载完成后运行初始测试
+        document.addEventListener('DOMContentLoaded', function() {
+            runTestCases();
+            showDemoDisplay();
+        });
+    </script>
+</body>
+</html>
