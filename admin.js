@@ -79,7 +79,7 @@ async function adminLogin() {
         return;
     }
     
-    // 验证管理员账号
+    // 验证管理员账号（使用config.js中定义的凭证）
     if (username === DEFAULT_ADMIN.username && password === DEFAULT_ADMIN.password) {
         currentUser = { username, role: 'admin' };
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -570,6 +570,8 @@ function getCombinations(arr, size) {
     helper(0, []);
     return result;
 }
+
+
 
 
 
