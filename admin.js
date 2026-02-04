@@ -244,6 +244,20 @@ async function updateStats() {
     }
 }
 
+// ==================== 小红书号验证函数 ====================
+function isValidXiaohongshuId(name) {
+    // 验证是否为纯数字编码
+    return /^\d+$/.test(name);
+}
+
+function getXiaohongshuIdStyle(name) {
+    // 如果不是纯数字编码，返回红色样式
+    if (!isValidXiaohongshuId(name)) {
+        return 'color: #ff4d4f; font-weight: bold; background: #fff1f0; padding: 2px 6px; border-radius: 4px;';
+    }
+    return '';
+}
+
 // ==================== 表格渲染 ====================
 function renderParticipantsTable() {
     const tbody = document.getElementById('participantsTableBody');
@@ -260,20 +274,25 @@ function renderParticipantsTable() {
         return;
     }
     
-    tbody.innerHTML = participants.map(p => `
+    tbody.innerHTML = participants.map(p => {
+        const nameStyle = getXiaohongshuIdStyle(p.name);
+        const warningIcon = !isValidXiaohongshuId(p.name) ? '⚠️ ' : '';
+        
+        return `
         <tr>
             <td><input type="checkbox" class="select-checkbox" data-id="${p.id}"></td>
-            <td>${p.id}</td>
-            <td>${p.name}</td>
-            <td>${p.score}</td>
+            <td><strong>${p.id}</strong></td>
+            <td><span style="${nameStyle}">${warningIcon}${p.name}</span></td>
+            <td><span class="badge badge-primary">${p.score}</span></td>
             <td>${formatDate(p.created_at)}</td>
             <td>
-                <button class="btn btn-sm btn-danger" onclick="deleteParticipant('${p.id}', '${p.name}')">
-                    删除
+                <button class="btn btn-sm btn-danger" onclick="deleteParticipant('${p.id}', '${p.name}', ${p.score})">
+                    🗑️ 删除
                 </button>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function renderAuditLogTable() {
@@ -551,6 +570,8 @@ function getCombinations(arr, size) {
     helper(0, []);
     return result;
 }
+
+
 
 
 

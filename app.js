@@ -1,141 +1,15 @@
-// ==================== 全局变量 ====================
-let currentUser = null;
-let participants = [];
-let pendingDeleteId = null;
-let allCombinations = []; // 保存所有匹配组合，用于查询功能
+// ==================== 小红书号验证函数 ====================
+function isValidXiaohongshuId(name) {
+    // 验证是否为纯数字编码
+    return /^\d+$/.test(name);
+}
 
-// ==================== 初始化 ====================
-document.addEventListener('DOMContentLoaded', async () => {
-    // 检查 Supabase 是否就绪
-    if (!isSupabaseReady()) {
-        alert('❌ 数据库未连接！请检查 config.js 配置');
-        return;
+function getXiaohongshuIdStyle(name) {
+    // 如果不是纯数字编码，返回红色样式
+    if (!isValidXiaohongshuId(name)) {
+        return 'color: #ff4d4f; font-weight: bold; background: #fff1f0; padding: 2px 6px; border-radius: 4px;';
     }
-    
-    // 检查登录状态
-    checkLoginStatus();
-    
-    // 加载参与者列表
-    await loadParticipants();
-    
-    // 回车键提交
-    document.getElementById('nameInput')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') document.getElementById('scoreInput').focus();
-    });
-    
-    document.getElementById('scoreInput')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') addParticipant();
-    });
-});
-
-// ==================== 认证功能 ====================
-function checkLoginStatus() {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        document.getElementById('userStatus').textContent = `👤 ${currentUser.username}`;
-    }
-}
-
-function showLoginModal() {
-    document.getElementById('loginModal').style.display = 'flex';
-}
-
-function closeLoginModal() {
-    document.getElementById('loginModal').style.display = 'none';
-    document.getElementById('loginError').style.display = 'none';
-}
-
-async function login() {
-    const username = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    
-    if (!username || !password) {
-        showError('请输入用户名和密码');
-        return;
-    }
-    
-    // 验证管理员账号
-    if (username === DEFAULT_ADMIN.username && password === DEFAULT_ADMIN.password) {
-        currentUser = { username, role: 'admin' };
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        document.getElementById('userStatus').textContent = `👤 ${username}`;
-        closeLoginModal();
-        showToast('登录成功！');
-        
-        // 如果在管理后台页面，刷新数据
-        if (window.location.pathname.includes('admin.html')) {
-            location.reload();
-        }
-    } else {
-        showError('用户名或密码错误');
-    }
-}
-
-function logout() {
-    currentUser = null;
-    localStorage.removeItem('currentUser');
-    window.location.href = 'index.html';
-}
-
-function showError(message) {
-    const errorEl = document.getElementById('loginError') || document.getElementById('deleteError');
-    if (errorEl) {
-        errorEl.textContent = message;
-        errorEl.style.display = 'block';
-        setTimeout(() => {
-            errorEl.style.display = 'none';
-        }, 3000);
-    }
-}
-
-// ==================== 管理后台登录功能 ====================
-function showAdminLogin() {
-    document.getElementById('adminLoginModal').style.display = 'flex';
-}
-
-function closeAdminLoginModal() {
-    document.getElementById('adminLoginModal').style.display = 'none';
-    document.getElementById('adminLoginError').style.display = 'none';
-}
-
-async function performAdminLogin() {
-    const username = document.getElementById('adminUsername').value.trim();
-    const password = document.getElementById('adminPassword').value;
-    
-    if (!username || !password) {
-        showAdminLoginError('请输入用户名和密码');
-        return;
-    }
-    
-    // 验证管理员账号
-    if (username === DEFAULT_ADMIN.username && password === DEFAULT_ADMIN.password) {
-        const currentUser = { username, role: 'admin' };
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        
-        // 关闭模态框
-        closeAdminLoginModal();
-        
-        // 清空表单
-        document.getElementById('adminUsername').value = '';
-        document.getElementById('adminPassword').value = '';
-        
-        // 跳转到管理后台
-        window.location.href = 'admin.html';
-    } else {
-        showAdminLoginError('用户名或密码错误');
-    }
-}
-
-function showAdminLoginError(message) {
-    const errorEl = document.getElementById('adminLoginError');
-    if (errorEl) {
-        errorEl.textContent = message;
-        errorEl.style.display = 'block';
-        setTimeout(() => {
-            errorEl.style.display = 'none';
-        }, 3000);
-    }
+    return '';
 }
 
 // ==================== 参与者管理 ====================
@@ -166,8 +40,15 @@ async function addParticipant() {
     
     // 验证
     if (!name) {
-        showToast('请输入姓名或昵称', 'error');
+        showToast('请输入小红书号', 'error');
         return;
+    }
+    
+    // 验证小红书号格式
+    if (!isValidXiaohongshuId(name)) {
+        if (!confirm('⚠️ 检测到您输入的可能不是标准小红书数字ID，是否继续添加？\n\n标准小红书ID应该是纯数字编码')) {
+            return;
+        }
     }
     
     if (isNaN(score) || score < 350 || score > 950) {
@@ -319,18 +200,23 @@ function renderParticipants() {
         return;
     }
     
-    listEl.innerHTML = participants.map(p => `
+    listEl.innerHTML = participants.map(p => {
+        const nameStyle = getXiaohongshuIdStyle(p.name);
+        const warningIcon = !isValidXiaohongshuId(p.name) ? '⚠️ ' : '';
+        
+        return `
         <div class="participant-item">
             <div>
                 <span class="participant-id">${p.id}</span>
-                <span class="participant-name">${p.name}</span>
+                <span class="participant-name" style="${nameStyle}">${warningIcon}${p.name}</span>
                 <span class="participant-score">${p.score}</span>
             </div>
             <button class="btn-remove" onclick="showAdminApprovalRequired()">
                 🗑️ 删除
             </button>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function updateCount() {
