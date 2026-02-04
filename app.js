@@ -470,8 +470,46 @@ function renderMatchResult(combos) {
     resultEl.innerHTML = html;
 }
 
-// ==================== 查询功能 ====================
+// ==================== 查询类型管理 ====================
+let currentQueryType = 'id'; // 'id' 或 'name'
+
+function setQueryType(type) {
+    currentQueryType = type;
+    
+    // 更新按钮状态
+    const idBtn = document.getElementById('queryByIdBtn');
+    const nameBtn = document.getElementById('queryByNameBtn');
+    const idSection = document.getElementById('idQuerySection');
+    const nameSection = document.getElementById('nameQuerySection');
+    
+    if (type === 'id') {
+        idBtn.classList.remove('btn-outline');
+        idBtn.classList.add('btn-primary');
+        nameBtn.classList.remove('btn-primary');
+        nameBtn.classList.add('btn-outline');
+        idSection.style.display = 'block';
+        nameSection.style.display = 'none';
+    } else {
+        nameBtn.classList.remove('btn-outline');
+        nameBtn.classList.add('btn-primary');
+        idBtn.classList.remove('btn-primary');
+        idBtn.classList.add('btn-outline');
+        nameSection.style.display = 'block';
+        idSection.style.display = 'none';
+    }
+}
+
+// ==================== 查询组合（统一入口）====================
 function queryCombinations() {
+    if (currentQueryType === 'id') {
+        queryCombinationsById();
+    } else {
+        queryCombinationsByName();
+    }
+}
+
+// ==================== 按用户ID查询组合 ====================
+function queryCombinationsById() {
     const queryId = document.getElementById('queryIdInput').value.trim().toUpperCase();
     
     if (!queryId) {
@@ -579,6 +617,126 @@ function renderQueryResult(combos, queryId) {
                 </div>
                 <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #e8e8e8; text-align: center; color: #8c8c8c; font-size: 0.95rem;">
                     <strong>成员ID:</strong> ${combo.members.map(m => m.id).join(', ')}
+                </div>
+            </div>
+        `;
+    });
+    
+    // 添加返回按钮
+    html += `
+        <div style="text-align: center; margin-top: 25px;">
+            <button class="btn btn-outline" onclick="clearQuery()" style="padding: 10px 25px;">
+                <span class="btn-icon">←</span> 返回全部结果
+            </button>
+        </div>
+    `;
+    
+    resultEl.innerHTML = html;
+}
+
+// ==================== 按小红书号查询组合 ====================
+function queryCombinationsByName() {
+    const queryName = document.getElementById('queryNameInput').value.trim();
+    
+    if (!queryName) {
+        showToast('请输入小红书号', 'error');
+        return;
+    }
+    
+    // 检查是否已进行匹配
+    if (allCombinations.length === 0) {
+        if (confirm('尚未进行匹配，是否先执行匹配？')) {
+            matchTeams();
+            // 延迟执行查询（等待匹配完成）
+            setTimeout(() => {
+                performQueryByName(queryName);
+            }, 1500);
+        }
+        return;
+    }
+    
+    // 直接执行查询
+    performQueryByName(queryName);
+}
+
+function performQueryByName(queryName) {
+    // 过滤包含该小红书号的组合
+    const filtered = allCombinations.filter(combo => 
+        combo.members.some(member => member.name === queryName)
+    );
+    
+    // 显示查询结果
+    renderQueryResultByName(filtered, queryName);
+}
+
+function renderQueryResultByName(combos, queryName) {
+    const resultEl = document.getElementById('queryResult');
+    const matchResultEl = document.getElementById('matchResult');
+    
+    // 隐藏常规匹配结果
+    if (matchResultEl) {
+        matchResultEl.style.display = 'none';
+    }
+    // 显示查询结果区域
+    if (resultEl) {
+        resultEl.style.display = 'block';
+    }
+    
+    if (combos.length === 0) {
+        resultEl.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #fa8c16; background: #fff7e6; border-radius: 12px;">
+                <div style="font-size: 3rem; margin-bottom: 20px;">🔍</div>
+                <h3 style="margin-bottom: 15px;">未找到包含小红书号 ${queryName} 的组合</h3>
+                <p>当前没有总分恰好等于${TARGET_SCORE}且包含该用户的组合</p>
+                <p style="margin-top: 15px; color: #8c8c8c;">
+                    💡 建议：添加更多参与者或调整分数，重新匹配
+                </p>
+                <button class="btn btn-primary" style="margin-top: 20px;" onclick="matchTeams()">
+                    <span class="btn-icon">🔄</span> 重新匹配
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = `
+        <div style="text-align: center; margin-bottom: 25px; padding: 20px; background: linear-gradient(135deg, #e6f7ff 0%, #f6ffed 100%); border-radius: 12px;">
+            <div style="font-size: 2.2rem; color: #1890ff; font-weight: bold; margin-bottom: 10px;">
+                🎯 找到 ${combos.length} 个包含小红书号 ${queryName} 的组合
+            </div>
+            <div style="color: #595959; font-size: 1.1rem;">
+                以下组合总分恰好等于 ${TARGET_SCORE} 分，且包含用户 ${queryName}
+            </div>
+        </div>
+    `;
+    
+    combos.forEach((combo, index) => {
+        // 高亮显示查询的用户
+        const membersHtml = combo.members.map(member => {
+            const isTarget = member.name === queryName;
+            return `
+                <div class="member-item" style="${isTarget ? 'border: 3px solid #1890ff; transform: scale(1.05);' : ''}">
+                    ${isTarget ? '<div style="position: absolute; top: -10px; right: -10px; background: #ff4d4f; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;">!</div>' : ''}
+                    <div class="member-id" style="${isTarget ? 'background: #1890ff; color: white;' : ''}">${member.id}</div>
+                    <div class="member-name" style="${isTarget ? 'color: #1890ff; font-weight: bold;' : ''}">${member.name}</div>
+                    <div class="member-score" style="${isTarget ? 'color: #1890ff;' : ''}">${member.score}</div>
+                </div>
+            `;
+        }).join('');
+        
+        html += `
+            <div class="combo-card" style="border-left: 5px solid #1890ff;">
+                <div class="combo-header">
+                    <div class="combo-index" style="background: linear-gradient(120deg, #1890ff 0%, #40a9ff 100%);">
+                        组合 #${index + 1}
+                    </div>
+                    <div class="combo-total">${TARGET_SCORE} 分</div>
+                </div>
+                <div class="combo-members">
+                    ${membersHtml}
+                </div>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #e8e8e8; text-align: center; color: #8c8c8c; font-size: 0.95rem;">
+                    <strong>成员信息:</strong> ${combo.members.map(m => `${m.id}(${m.name})`).join(', ')}
                 </div>
             </div>
         `;
