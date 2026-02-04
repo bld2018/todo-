@@ -124,51 +124,23 @@
                     </button>
                     <!-- 在"立即查找所有组合"按钮下方添加 -->
 <div class="form-group" style="margin-top: 20px; margin-bottom: 20px; padding: 15px; background: #f9fbfd; border-radius: 10px;">
-    <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #1a365d;">
-        🔍 查询包含用户ID或小红书号的组合
+    <label for="queryNameInput" style="display: block; margin-bottom: 10px; font-weight: 600; color: #1a365d;">
+        🔍 查询包含小红书号的组合
     </label>
-    
-    <!-- 查询类型选择 -->
-    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-        <button class="btn btn-outline btn-sm" id="queryByIdBtn" onclick="setQueryType('id')" style="flex: 1;">按用户ID查询</button>
-        <button class="btn btn-outline btn-sm" id="queryByNameBtn" onclick="setQueryType('name')" style="flex: 1;">按小红书号查询</button>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <input type="text" id="queryNameInput" class="form-control" 
+               placeholder="输入小红书号（如 2789378855）" 
+               style="flex: 1; min-width: 200px;">
+        <button class="btn btn-primary" onclick="queryCombinations()" style="white-space: nowrap;">
+            <span class="btn-icon">🔍</span> 查询组合
+        </button>
+        <button class="btn btn-outline" onclick="clearQuery()" style="white-space: nowrap;">
+            <span class="btn-icon">↺</span> 重置
+        </button>
     </div>
-    
-    <!-- 用户ID查询 -->
-    <div id="idQuerySection">
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <input type="text" id="queryIdInput" class="form-control" 
-                   placeholder="输入用户ID（如 P123456）" 
-                   style="flex: 1; min-width: 200px;">
-            <button class="btn btn-primary" onclick="queryCombinations()" style="white-space: nowrap;">
-                <span class="btn-icon">🔍</span> 查询组合
-            </button>
-            <button class="btn btn-outline" onclick="clearQuery()" style="white-space: nowrap;">
-                <span class="btn-icon">↺</span> 重置
-            </button>
-        </div>
-        <small class="form-text" style="margin-top: 8px; display: block;">
-            💡 提示：输入用户ID（如 P1701234），系统将显示所有包含该用户的匹配组合
-        </small>
-    </div>
-    
-    <!-- 小红书号查询 -->
-    <div id="nameQuerySection" style="display: none;">
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <input type="text" id="queryNameInput" class="form-control" 
-                   placeholder="输入小红书号（如 2789378855）" 
-                   style="flex: 1; min-width: 200px;">
-            <button class="btn btn-primary" onclick="queryCombinationsByName()" style="white-space: nowrap;">
-                <span class="btn-icon">🔍</span> 查询组合
-            </button>
-            <button class="btn btn-outline" onclick="clearQuery()" style="white-space: nowrap;">
-                <span class="btn-icon">↺</span> 重置
-            </button>
-        </div>
-        <small class="form-text" style="margin-top: 8px; display: block;">
-            💡 提示：输入小红书号，系统将显示所有包含该用户的所有匹配组合
-        </small>
-    </div>
+    <small class="form-text" style="margin-top: 8px; display: block;">
+        💡 提示：输入小红书号，系统将显示所有包含该用户的所有匹配组合
+    </small>
 </div>
 <div id="queryResult" class="match-result" style="display: none;"></div>
                     <div id="matchResult" class="match-result">
