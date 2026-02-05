@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统压力测试工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        .test-controls { 
+            background: #f0f8ff; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+        }
+        .control-group { 
+            margin: 15px 0; 
+        }
+        label { 
+            display: inline-block; 
+            width: 120px; 
+            font-weight: bold; 
+        }
+        input, select { 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            width: 150px; 
+        }
+        button { 
+            padding: 10px 20px; 
+            background: #1890ff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 5px; 
+        }
+        button:hover { 
+            background: #40a9ff; 
+        }
+        button:disabled { 
+            background: #ccc; 
+            cursor: not-allowed; 
+        }
+        .results { 
+            background: #fafafa; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 20px 0; 
+        }
+        .metrics { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 15px; 
+            margin: 20px 0; 
+        }
+        .metric-card { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 6px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+            text-align: center; 
+        }
+        .metric-value { 
+            font-size: 1.8em; 
+            font-weight: bold; 
+            color: #1890ff; 
+        }
+        .metric-label { 
+            color: #666; 
+            margin-top: 5px; 
+        }
+        .progress-bar { 
+            width: 100%; 
+            height: 20px; 
+            background: #f0f0f0; 
+            border-radius: 10px; 
+            overflow: hidden; 
+            margin: 10px 0; 
+        }
+        .progress-fill { 
+            height: 100%; 
+            background: linear-gradient(90deg, #1890ff, #40a9ff); 
+            width: 0%; 
+            transition: width 0.3s ease; 
+        }
+        .log { 
+            height: 200px; 
+            overflow-y: auto; 
+            background: #000; 
+            color: #00ff00; 
+            padding: 10px; 
+            font-family: monospace; 
+            border-radius: 4px; 
+            margin: 15px 0; 
+        }
+        .status-running { color: #52c41a; }
+        .status-stopped { color: #ff4d4f; }
+        .status-paused { color: #faad14; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 系统压力测试工具</h1>
+        <p>模拟高并发访问，测试系统性能和稳定性</p>
+        
+        <div class="test-controls">
+            <h3>⚙️ 测试配置</h3>
+            
+            <div class="control-group">
+                <label>并发用户数:</label>
+                <input type="number" id="concurrentUsers" value="10" min="1" max="100">
+                <span style="color: #666; margin-left: 10px;">建议: 5-20</span>
+            </div>
+            
+            <div class="control-group">
+                <label>请求间隔:</label>
+                <input type="number" id="requestInterval" value="100" min="10" max="5000"> ms
+                <span style="color: #666; margin-left: 10px;">请求间的时间间隔</span>
+            </div>
+            
+            <div class="control-group">
+                <label>测试持续时间:</label>
+                <input type="number" id="testDuration" value="60" min="10" max="300"> 秒
+                <span style="color: #666; margin-left: 10px;">测试运行总时间</span>
+            </div>
+            
+            <div class="control-group">
+                <label>测试类型:</label>
+                <select id="testType">
+                    <option value="read">读取操作</option>
+                    <option value="write">写入操作</option>
+                    <option value="mixed">混合操作</option>
+                    <option value="calculate">计算操作</option>
+                </select>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button id="startBtn" onclick="startTest()">▶️ 开始测试</button>
+                <button id="pauseBtn" onclick="pauseTest()" disabled>⏸️ 暂停</button>
+                <button id="stopBtn" onclick="stopTest()" disabled>⏹️ 停止</button>
+                <button onclick="clearLog()">🗑️ 清空日志</button>
+            </div>
+        </div>
+        
+        <div class="metrics">
+            <div class="metric-card">
+                <div class="metric-value" id="totalRequests">0</div>
+                <div class="metric-label">总请求数</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="successfulRequests">0</div>
+                <div class="metric-label">成功请求数</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="failedRequests">0</div>
+                <div class="metric-label">失败请求数</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="avgResponseTime">0</div>
+                <div class="metric-label">平均响应时间(ms)</div>
+            </div>
+        </div>
+        
+        <div class="results">
+            <h3>📊 测试进度</h3>
+            <div>测试状态: <span id="testStatus" class="status-stopped">已停止</span></div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div>进度: <span id="progressText">0%</span></div>
+            <div>预计剩余时间: <span id="remainingTime">--:--</span></div>
+        </div>
+        
+        <div class="results">
+            <h3>📝 测试日志</h3>
+            <div class="log" id="testLog"></div>
+        </div>
+    </div>
+
+    <script>
+        // 测试控制变量
+        let isTesting = false;
+        let isPaused = false;
+        let testStartTime = 0;
+        let completedRequests = 0;
+        let totalRequests = 0;
+        let successfulRequests = 0;
+        let failedRequests = 0;
+        let responseTimes = [];
+        let activeWorkers = [];
+        let testTimer = null;
+        
+        // 测试配置
+        const testConfig = {
+            concurrentUsers: 10,
+            requestInterval: 100,
+            testDuration: 60,
+            testType: 'read'
+        };
+        
+        // 日志记录
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('testLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            
+            logElement.textContent += logEntry;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        // 更新统计显示
+        function updateStats() {
+            document.getElementById('totalRequests').textContent = completedRequests;
+            document.getElementById('successfulRequests').textContent = successfulRequests;
+            document.getElementById('failedRequests').textContent = failedRequests;
+            
+            const avgTime = responseTimes.length > 0 ? 
+                (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length).toFixed(0) : 0;
+            document.getElementById('avgResponseTime').textContent = avgTime;
+        }
+        
+        // 更新进度显示
+        function updateProgress() {
+            if (!isTesting) return;
+            
+            const elapsed = (Date.now() - testStartTime) / 1000;
+            const progress = Math.min(elapsed / testConfig.testDuration, 1);
+            const percentage = (progress * 100).toFixed(1);
+            
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+            document.getElementById('progressText').textContent = `${percentage}%`;
+            
+            const remaining = testConfig.testDuration - elapsed;
+            if (remaining > 0) {
+                const minutes = Math.floor(remaining / 60);
+                const seconds = Math.floor(remaining % 60);
+                document.getElementById('remainingTime').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            } else {
+                document.getElementById('remainingTime').textContent = '00:00';
+            }
+        }
+        
+        // 开始测试
+        function startTest() {
+            // 获取配置
+            testConfig.concurrentUsers = parseInt(document.getElementById('concurrentUsers').value);
+            testConfig.requestInterval = parseInt(document.getElementById('requestInterval').value);
+            testConfig.testDuration = parseInt(document.getElementById('testDuration').value);
+            testConfig.testType = document.getElementById('testType').value;
+            
+            // 重置状态
+            isTesting = true;
+            isPaused = false;
+            testStartTime = Date.now();
+            completedRequests = 0;
+            successfulRequests = 0;
+            failedRequests = 0;
+            responseTimes = [];
+            activeWorkers = [];
+            
+            // 更新UI
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('testStatus').className = 'status-running';
+            document.getElementById('testStatus').textContent = '运行中';
+            
+            log(`🚀 开始压力测试 - 并发用户: ${testConfig.concurrentUsers}, 类型: ${testConfig.testType}`);
+            
+            // 启动工作线程
+            for (let i = 0; i < testConfig.concurrentUsers; i++) {
+                startWorker(i);
+            }
+            
+            // 启动进度更新
+            testTimer = setInterval(() => {
+                updateProgress();
+                if ((Date.now() - testStartTime) / 1000 >= testConfig.testDuration) {
+                    stopTest();
+                }
+            }, 1000);
+        }
+        
+        // 暂停测试
+        function pauseTest() {
+            isPaused = !isPaused;
+            
+            if (isPaused) {
+                document.getElementById('pauseBtn').textContent = '▶️ 继续';
+                document.getElementById('testStatus').className = 'status-paused';
+                document.getElementById('testStatus').textContent = '已暂停';
+                log('⏸️ 测试已暂停');
+            } else {
+                document.getElementById('pauseBtn').textContent = '⏸️ 暂停';
+                document.getElementById('testStatus').className = 'status-running';
+                document.getElementById('testStatus').textContent = '运行中';
+                log('▶️ 测试已继续');
+            }
+        }
+        
+        // 停止测试
+        function stopTest() {
+            isTesting = false;
+            isPaused = false;
+            
+            // 清理定时器
+            if (testTimer) {
+                clearInterval(testTimer);
+                testTimer = null;
+            }
+            
+            // 停止所有工作线程
+            activeWorkers.forEach(worker => {
+                if (worker.timer) clearInterval(worker.timer);
+            });
+            activeWorkers = [];
+            
+            // 更新UI
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('testStatus').className = 'status-stopped';
+            document.getElementById('testStatus').textContent = '已停止';
+            
+            log(`⏹️ 测试已停止 - 总请求数: ${completedRequests}, 成功率: ${(successfulRequests/completedRequests*100||0).toFixed(1)}%`);
+        }
+        
+        // 启动工作线程
+        function startWorker(workerId) {
+            const worker = {
+                id: workerId,
+                timer: null
+            };
+            
+            worker.timer = setInterval(async () => {
+                if (!isTesting || isPaused) return;
+                
+                try {
+                    const startTime = Date.now();
+                    
+                    // 执行测试操作
+                    await executeTestOperation();
+                    
+                    const responseTime = Date.now() - startTime;
+                    responseTimes.push(responseTime);
+                    
+                    successfulRequests++;
+                    completedRequests++;
+                    
+                    if (completedRequests % 10 === 0) {
+                        log(`✅ Worker ${workerId}: 请求成功 (${responseTime}ms)`);
+                    }
+                    
+                } catch (error) {
+                    failedRequests++;
+                    completedRequests++;
+                    log(`❌ Worker ${workerId}: 请求失败 - ${error.message}`);
+                }
+                
+                updateStats();
+                
+            }, testConfig.requestInterval);
+            
+            activeWorkers.push(worker);
+        }
+        
+        // 执行测试操作
+        async function executeTestOperation() {
+            switch (testConfig.testType) {
+                case 'read':
+                    // 读取操作 - 获取参与者列表
+                    await supabaseClient.from('participants').select('*').limit(10);
+                    break;
+                    
+                case 'write':
+                    // 写入操作 - 添加测试参与者
+                    const testName = `test_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+                    const testScore = Math.floor(Math.random() * 100) + 1;
+                    await supabaseClient.from('participants').insert([
+                        { name: testName, score: testScore }
+                    ]);
+                    break;
+                    
+                case 'mixed':
+                    // 混合操作 - 随机读写
+                    if (Math.random() > 0.5) {
+                        await executeTestOperation.call(this, 'read');
+                    } else {
+                        await executeTestOperation.call(this, 'write');
+                    }
+                    break;
+                    
+                case 'calculate':
+                    // 计算操作 - 触发匹配计算
+                    // 这里模拟计算操作
+                    await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
+                    break;
+            }
+        }
+        
+        // 清空日志
+        function clearLog() {
+            document.getElementById('testLog').textContent = '';
+        }
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🔧 压力测试工具已就绪');
+            log('💡 请配置测试参数后点击开始测试');
+        });
+    </script>
+</body>
+</html>

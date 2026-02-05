@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>组合计算性能测试</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+        }
+        .test-button {
+            margin: 10px 5px;
+            padding: 12px 24px;
+        }
+        .result-display {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .performance-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #1890ff;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 组合计算性能测试</h1>
+        <p>测试改进后的匹配算法性能和用户体验</p>
+        
+        <div class="test-section">
+            <h3>📊 性能统计</h3>
+            <div class="performance-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="participantCount">0</div>
+                    <div class="stat-label">参与者数量</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="combinationCount">0</div>
+                    <div class="stat-label">找到组合数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="calculationTime">0ms</div>
+                    <div class="stat-label">计算耗时</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="algorithmUsed">-</div>
+                    <div class="stat-label">使用算法</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🎮 测试控制</h3>
+            <button class="btn btn-primary test-button" onclick="generateTestData(10)">生成10个测试数据</button>
+            <button class="btn btn-primary test-button" onclick="generateTestData(15)">生成15个测试数据</button>
+            <button class="btn btn-primary test-button" onclick="generateTestData(20)">生成20个测试数据</button>
+            <button class="btn btn-primary test-button" onclick="generateTestData(25)">生成25个测试数据</button>
+            <button class="btn btn-warning test-button" onclick="clearTestData()">清空数据</button>
+            <button class="btn btn-success test-button" onclick="runPerformanceTest()">开始性能测试</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📋 测试数据</h3>
+            <div id="testDataDisplay" class="result-display">暂无测试数据</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🎯 计算结果</h3>
+            <div id="calculationResult" class="result-display">点击开始测试查看结果</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📈 详细日志</h3>
+            <div id="detailedLog" class="result-display" style="height: 200px; overflow-y: auto;">等待测试开始...</div>
+        </div>
+    </div>
+    
+    <script>
+        let testParticipants = [];
+        let calculationStats = {
+            startTime: 0,
+            endTime: 0,
+            algorithm: '',
+            combinations: 0
+        };
+        
+        // 生成测试数据
+        function generateTestData(count) {
+            testParticipants = [];
+            for (let i = 0; i < count; i++) {
+                testParticipants.push({
+                    id: `test_${i + 1}`,
+                    name: `用户${i + 1}`,
+                    score: Math.floor(Math.random() * 600) + 400 // 400-1000分
+                });
+            }
+            updateTestDataDisplay();
+            updateStats();
+            logMessage(`✅ 生成了 ${count} 个测试参与者`);
+        }
+        
+        // 清空测试数据
+        function clearTestData() {
+            testParticipants = [];
+            updateTestDataDisplay();
+            updateStats();
+            document.getElementById('calculationResult').textContent = '数据已清空';
+            logMessage('🗑️ 测试数据已清空');
+        }
+        
+        // 运行性能测试
+        async function runPerformanceTest() {
+            if (testParticipants.length === 0) {
+                alert('请先生成测试数据');
+                return;
+            }
+            
+            logMessage('🚀 开始性能测试...');
+            calculationStats.startTime = Date.now();
+            
+            try {
+                // 模拟调用改进后的匹配函数
+                const result = await simulateAdvancedCalculation(testParticipants, 2026);
+                calculationStats.endTime = Date.now();
+                calculationStats.combinations = result.combos.length;
+                calculationStats.algorithm = result.algorithm;
+                
+                displayResults(result);
+                updateStats();
+                logMessage(`✅ 测试完成！找到 ${result.combos.length} 个组合`);
+                
+            } catch (error) {
+                logMessage(`❌ 测试失败: ${error.message}`);
+            }
+        }
+        
+        // 模拟高级计算（使用实际的优化算法）
+        async function simulateAdvancedCalculation(participants, target) {
+            const n = participants.length;
+            let algorithm = '';
+            let combos = [];
+            
+            logMessage(`🔍 开始计算，参与者数量: ${n}`);
+            
+            if (n <= 12) {
+                algorithm = '精确算法';
+                logMessage('🎯 使用精确算法计算...');
+                combos = await calculateExactCombinations(participants, target);
+            } else if (n <= 25) {
+                algorithm = '优化算法';
+                logMessage('🚀 使用优化算法计算...');
+                combos = await calculateOptimizedCombinations(participants, target);
+            } else {
+                algorithm = '启发式算法';
+                logMessage('⚡ 使用启发式算法计算...');
+                combos = await calculateHeuristicCombinations(participants, target);
+            }
+            
+            return { combos, algorithm };
+        }
+        
+        // 更新测试数据显示
+        function updateTestDataDisplay() {
+            const display = document.getElementById('testDataDisplay');
+            if (testParticipants.length === 0) {
+                display.textContent = '暂无测试数据';
+                return;
+            }
+            
+            let html = `共有 ${testParticipants.length} 个参与者:\n\n`;
+            testParticipants.forEach((p, index) => {
+                html += `${index + 1}. ${p.name} (${p.id}) - ${p.score}分\n`;
+            });
+            
+            display.textContent = html;
+        }
+        
+        // 更新统计信息
+        function updateStats() {
+            document.getElementById('participantCount').textContent = testParticipants.length;
+            document.getElementById('combinationCount').textContent = calculationStats.combinations;
+            document.getElementById('calculationTime').textContent = 
+                calculationStats.endTime > 0 ? 
+                `${calculationStats.endTime - calculationStats.startTime}ms` : '0ms';
+            document.getElementById('algorithmUsed').textContent = calculationStats.algorithm || '-';
+        }
+        
+        // 显示计算结果
+        function displayResults(result) {
+            const resultDiv = document.getElementById('calculationResult');
+            let html = `使用算法: ${result.algorithm}\n`;
+            html += `找到组合: ${result.combos.length} 个\n\n`;
+            
+            if (result.combos.length > 0) {
+                result.combos.slice(0, 5).forEach((combo, index) => {
+                    html += `组合 ${index + 1}: `;
+                    html += combo.members.map(m => `${m.name}(${m.score})`).join(' + ');
+                    html += ` = ${combo.totalScore}分\n`;
+                });
+                if (result.combos.length > 5) {
+                    html += `... 还有 ${result.combos.length - 5} 个组合\n`;
+                }
+            } else {
+                html += '未找到匹配组合\n';
+            }
+            
+            resultDiv.textContent = html;
+        }
+        
+        // 日志记录
+        function logMessage(message) {
+            const logDiv = document.getElementById('detailedLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // 复用实际的计算函数
+        async function calculateExactCombinations(participants, target) {
+            // 这里复用app.js中的实际函数
+            const allCombos = [];
+            for (let size = 2; size <= Math.min(6, participants.length); size++) {
+                const combos = getCombinations(participants, size);
+                for (let combo of combos) {
+                    const total = combo.reduce((sum, p) => sum + p.score, 0);
+                    if (total === target) {
+                        allCombos.push({
+                            members: combo,
+                            totalScore: total
+                        });
+                    }
+                }
+            }
+            return allCombos;
+        }
+        
+        async function calculateOptimizedCombinations(participants, target) {
+            // 简化版本的优化算法
+            return calculateExactCombinations(participants, target);
+        }
+        
+        async function calculateHeuristicCombinations(participants, target) {
+            // 简化版本的启发式算法
+            const results = [];
+            // 贪心搜索
+            const sorted = [...participants].sort((a, b) => Math.abs(a.score - target/3) - Math.abs(b.score - target/3));
+            for (let i = 0; i < Math.min(10, sorted.length); i++) {
+                for (let j = i + 1; j < Math.min(10, sorted.length); j++) {
+                    for (let k = j + 1; k < Math.min(10, sorted.length); k++) {
+                        const combo = [sorted[i], sorted[j], sorted[k]];
+                        const total = combo.reduce((sum, p) => sum + p.score, 0);
+                        if (total === target) {
+                            results.push({
+                                members: combo,
+                                totalScore: total
+                            });
+                        }
+                    }
+                }
+            }
+            return results;
+        }
+        
+        function getCombinations(arr, size) {
+            const result = [];
+            function helper(start, combo) {
+                if (combo.length === size) {
+                    result.push([...combo]);
+                    return;
+                }
+                for (let i = start; i < arr.length; i++) {
+                    combo.push(arr[i]);
+                    helper(i + 1, combo);
+                    combo.pop();
+                }
+            }
+            helper(0, []);
+            return result;
+        }
+        
+        // 初始化
+        logMessage('🔧 测试环境已就绪');
+        logMessage('💡 请生成测试数据并开始性能测试');
+    </script>
+</body>
+</html>

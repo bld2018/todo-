@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小红书ID验证测试</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        .test-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .test-button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background: #40a9ff;
+        }
+        .result {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .valid {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .invalid {
+            background: #fff1f0;
+            border: 1px solid #ffa39e;
+            color: #ff4d4f;
+        }
+        .test-case {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 3px solid #1890ff;
+            background: white;
+        }
+        .red-marked {
+            border-left-color: #ff4d4f;
+        }
+        .normal-display {
+            border-left-color: #52c41a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 小红书ID验证测试</h1>
+        
+        <div class="test-section">
+            <h2>实时测试</h2>
+            <input type="text" id="testInput" class="test-input" placeholder="输入小红书ID进行测试...">
+            <button class="test-button" onclick="testSingleId()">测试</button>
+            <div id="singleResult"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>批量测试用例</h2>
+            <button class="test-button" onclick="runBatchTests()">运行所有测试</button>
+            <div id="batchResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>验证规则说明</h2>
+            <ul>
+                <li><strong>TEST标记</strong>: 任何大小写的"TEST"都会显示红色</li>
+                <li><strong>纯数字</strong>: 如 "123456" - 正常显示</li>
+                <li><strong>纯字母</strong>: 如 "abcdef" - 正常显示</li>
+                <li><strong>字母+数字</strong>: 如 "abc123" - 正常显示</li>
+                <li><strong>特殊字符</strong>: 支持下划线(_)和连字符(-)</li>
+                <li><strong>长度要求</strong>: 至少3个字符</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function testSingleId() {
+            const input = document.getElementById('testInput').value.trim();
+            const resultDiv = document.getElementById('singleResult');
+            
+            if (!input) {
+                resultDiv.innerHTML = '<div class="result invalid">请输入要测试的ID</div>';
+                return;
+            }
+            
+            const isValid = isValidXiaohongshuId(input);
+            const style = getXiaohongshuIdStyle(input);
+            const isTest = input.toUpperCase() === 'TEST';
+            
+            let resultClass = isValid ? 'valid' : 'invalid';
+            let resultText = isValid ? '✅ 有效ID' : '❌ 无效ID';
+            let styleInfo = style ? '🔴 红色标记' : '🟢 正常显示';
+            
+            resultDiv.innerHTML = `
+                <div class="result ${resultClass}">
+                    <strong>输入:</strong> ${input}<br>
+                    <strong>验证结果:</strong> ${resultText}<br>
+                    <strong>样式标记:</strong> ${styleInfo}<br>
+                    <strong>显示效果:</strong> <span style="${style}">${input}</span>
+                </div>
+            `;
+        }
+
+        function runBatchTests() {
+            const testCases = [
+                'TEST',           // 应该红色标记
+                'test',           // 应该红色标记
+                'Test',           // 应该红色标记
+                '123456',         // 纯数字 - 正常显示
+                'abcdef',         // 纯字母 - 正常显示
+                'abc123',         // 字母+数字 - 正常显示
+                'user_123',       // 下划线 - 正常显示
+                'user-name',      // 连字符 - 正常显示
+                'AB12CD34',       // 大小写混合 - 正常显示
+                '12',             // 太短 - 无效
+                '',               // 空字符串 - 无效
+                'user@name',      // 特殊字符 - 无效
+                '测试中文',        // 中文 - 无效
+                'user name'       // 空格 - 无效
+            ];
+            
+            const resultsDiv = document.getElementById('batchResults');
+            resultsDiv.innerHTML = '<h3>测试结果:</h3>';
+            
+            testCases.forEach(testCase => {
+                const isValid = isValidXiaohongshuId(testCase);
+                const style = getXiaohongshuIdStyle(testCase);
+                const isTest = testCase && testCase.toUpperCase() === 'TEST';
+                
+                let testCaseClass = isTest ? 'red-marked' : 'normal-display';
+                let statusText = isTest ? '🔴 TEST标记(红色)' : 
+                                  (isValid ? '🟢 有效ID(正常)' : '❌ 无效ID');
+                
+                resultsDiv.innerHTML += `
+                    <div class="test-case ${testCaseClass}">
+                        <strong>输入:</strong> "${testCase}"<br>
+                        <strong>验证:</strong> ${isValid ? '✅ 有效' : '❌ 无效'}<br>
+                        <strong>样式:</strong> ${style ? '🔴 红色标记' : '🟢 正常显示'}<br>
+                        <strong>显示效果:</strong> <span style="${style}">${testCase || '(空)'}</span><br>
+                        <strong>结果:</strong> ${statusText}
+                    </div>
+                `;
+            });
+        }
+
+        // 页面加载完成后运行批量测试
+        document.addEventListener('DOMContentLoaded', function() {
+            runBatchTests();
+        });
+    </script>
+</body>
+</html>

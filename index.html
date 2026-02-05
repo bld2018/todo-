@@ -12,13 +12,35 @@
 <body>
     <!-- 全局加载指示器 -->
     <div id="globalLoadingIndicator" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-         background: rgba(255,255,255,0.9); z-index: 9999; justify-content: center; 
-         align-items: center; flex-direction: column;">
+         background: rgba(255,255,255,0.95); z-index: 9999; justify-content: center; 
+         align-items: center; flex-direction: column; backdrop-filter: blur(5px);">
         <div style="font-size: 3rem; margin-bottom: 20px; animation: spin 1s linear infinite;">🔄</div>
-        <div id="loadingText" style="font-size: 1.2rem; color: #1890ff; font-weight: bold;">数据加载中...</div>
-        <div id="loadingProgress" style="margin-top: 15px; width: 200px; height: 4px; background: #f0f0f0; border-radius: 2px; overflow: hidden;">
-            <div id="progressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #1890ff, #40a9ff); 
-                 transition: width 0.3s ease;"></div>
+        <div id="loadingText" style="font-size: 1.3rem; color: #1890ff; font-weight: bold; margin-bottom: 20px; text-align: center;">
+            正在计算最佳组合...
+        </div>
+        <div style="width: 350px; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem;">
+                <span style="color: #595959;">计算进度:</span>
+                <span id="progressPercent" style="color: #1890ff; font-weight: bold;">0%</span>
+            </div>
+            <div id="loadingProgress" style="height: 12px; background: #f0f0f0; border-radius: 6px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+                <div id="progressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #1890ff, #40a9ff, #1890ff); 
+                     transition: width 0.4s ease; border-radius: 6px;"></div>
+            </div>
+        </div>
+        <div style="color: #8c8c8c; font-size: 0.95rem; margin-bottom: 25px; display: flex; align-items: center; gap: 8px;">
+            <span>⏱️</span>
+            <span>预估剩余时间:</span>
+            <span id="estimatedTime" style="color: #1890ff; font-weight: 600;">--:--</span>
+        </div>
+        <div id="calculationTips" style="margin-top: 10px; padding: 20px; background: linear-gradient(135deg, #f0f8ff, #e6f7ff); 
+             border-radius: 12px; max-width: 450px; text-align: center; color: #1890ff; font-size: 1rem; 
+             border: 1px solid #d9f0ff; box-shadow: 0 4px 15px rgba(24, 144, 255, 0.1);">
+            正在智能分析所有可能的组合...
+        </div>
+        <div style="margin-top: 25px; font-size: 0.9rem; color: #bfbfbf; text-align: center;">
+            <div>💡 系统正在运用多种算法确保结果准确</div>
+            <div style="margin-top: 5px;">🔒 所有计算过程均经过严格质量控制</div>
         </div>
     </div>
     
@@ -152,7 +174,7 @@
                 <div id="loginError" class="error-message" style="display: none;"></div>
                 <button class="btn btn-primary btn-block" onclick="login()">登录</button>
                 <div style="text-align: center; margin-top: 15px; color: #8c8c8c; font-size: 0.9rem;">
-                    默认管理员账号: admin / admin123
+                    
                 </div>
             </div>
         </div>
@@ -177,7 +199,7 @@
                 <div id="adminLoginError" class="error-message" style="display: none;"></div>
                 <button class="btn btn-primary btn-block" onclick="performAdminLogin()">登录</button>
                 <div style="text-align: center; margin-top: 15px; color: #8c8c8c; font-size: 0.9rem;">
-                    默认管理员账号: admin / luo2026.
+                .
                 </div>
             </div>
         </div>

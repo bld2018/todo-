@@ -575,6 +575,133 @@ label {
     margin-top: 8px;
 }
 
+/* ==================== 加载动画和进度条样式 ==================== */
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* 进度条动画效果 */
+#progressBar {
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(90deg, 
+        #1890ff 0%, 
+        #40a9ff 25%, 
+        #69c0ff 50%, 
+        #40a9ff 75%, 
+        #1890ff 100%);
+    background-size: 200% 100%;
+}
+
+/* 加载文本脉冲效果 */
+#loadingText {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* 计算提示区域样式 */
+#calculationTips {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 加载背景模糊效果 */
+#globalLoadingIndicator {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* 按钮加载状态 */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.btn-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* 进度百分比动画 */
+#progressPercent {
+    transition: all 0.3s ease;
+    min-width: 40px;
+    text-align: right;
+}
+
+/* 预估时间闪烁效果 */
+#estimatedTime {
+    animation: blink 3s infinite;
+}
+
+@keyframes blink {
+    0%, 50%, 100% { opacity: 1; }
+    25%, 75% { opacity: 0.7; }
+}
+
+/* 响应式加载界面 */
+@media (max-width: 768px) {
+    #globalLoadingIndicator {
+        padding: 20px;
+    }
+    
+    #globalLoadingIndicator > div {
+        max-width: 90vw;
+    }
+    
+    #loadingProgress {
+        width: 90vw;
+        max-width: 300px;
+    }
+    
+    #calculationTips {
+        font-size: 0.9rem;
+        padding: 15px;
+    }
+}
+
+/* 高性能计算提示 */
+.performance-tip {
+    background: linear-gradient(135deg, #fffbe6, #feffe6);
+    border-left: 4px solid #faad14;
+    padding: 12px 16px;
+    margin: 15px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.9rem;
+    color: #d48806;
+}
+
 /* ==================== 响应式设计 ==================== */
 @media (max-width: 768px) {
     .grid {

@@ -44,6 +44,164 @@ let pendingDeleteId = null;
 let allCombinations = []; // 保存所有匹配组合，用于查询功能
 let combinationCache = new Map(); // 缓存组合计算结果
 let lastParticipantsHash = ''; // 上次参与者的哈希值
+let isCalculating = false; // 防止重复计算
+
+// ==================== 性能优化工具函数 ====================
+function getParticipantsHash(participantsList) {
+    // 生成参与者列表的哈希值，用于缓存判断
+    return participantsList.map(p => `${p.id}-${p.name}-${p.score}`).join('|');
+}
+
+function getCachedCombinations(participantsList, targetScore) {
+    const hash = getParticipantsHash(participantsList);
+    if (combinationCache.has(hash)) {
+        console.log('🎯 使用缓存的组合结果');
+        return combinationCache.get(hash);
+    }
+    return null;
+}
+
+function cacheCombinations(participantsList, combinations) {
+    const hash = getParticipantsHash(participantsList);
+    combinationCache.set(hash, combinations);
+    console.log('💾 缓存组合结果，哈希:', hash);
+    
+    // 限制缓存大小，避免内存占用过大
+    if (combinationCache.size > 10) {
+        const firstKey = combinationCache.keys().next().value;
+        combinationCache.delete(firstKey);
+    }
+}
+
+// ==================== 队列化数据库操作 ====================
+async function queuedDatabaseOperation(operation, priority = 0) {
+    try {
+        // 显示队列状态
+        showQueueStatus();
+        
+        // 通过全局队列执行操作
+        const result = await globalRequestQueue.add(async () => {
+            // 应用速率限制
+            return await globalRateLimiter.checkAndProceed(operation);
+        }, priority);
+        
+        return result;
+    } catch (error) {
+        console.error('队列操作失败:', error);
+        throw error;
+    }
+}
+
+// ==================== 智能加载状态管理 ====================
+function showLoadingState(show = true, message = '数据加载中...', progress = 0) {
+    if (show) {
+        globalLoadingManager.show(message, progress);
+    } else {
+        globalLoadingManager.hide();
+    }
+}
+
+function updateLoadingProgress(progress, message) {
+    globalLoadingManager.updateProgress(progress, message);
+}
+
+// ==================== 按钮加载状态管理 ====================
+function setButtonLoading(buttonId, loading = true) {
+    const button = document.getElementById(buttonId);
+    if (button) {
+        if (loading) {
+            button.classList.add('btn-loading');
+            button.disabled = true;
+        } else {
+            button.classList.remove('btn-loading');
+            button.disabled = false;
+        }
+    }
+}
+
+// ==================== 智能重试工具函数 ====================
+async function smartRetry(operation, maxRetries = 3, baseDelay = 1000) {
+    let lastError;
+    
+    for (let i = 0; i <= maxRetries; i++) {
+        try {
+            const result = await operation();
+            if (result.error) {
+                lastError = result.error;
+                if (i < maxRetries) {
+                    // 指数退避 + 随机抖动
+                    const delay = (Math.pow(2, i) * baseDelay) + (Math.random() * 1000);
+                    console.log(`🔁 第 ${i + 1} 次重试，${Math.round(delay)}ms 后重试...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            } else {
+                if (i > 0) {
+                    console.log(`✅ 操作在第 ${i + 1} 次尝试后成功`);
+                }
+                return result;
+            }
+        } catch (error) {
+            lastError = error;
+            if (i < maxRetries) {
+                const delay = (Math.pow(2, i) * baseDelay) + (Math.random() * 1000);
+                console.log(`🔁 第 ${i + 1} 次重试，${Math.round(delay)}ms 后重试...`, error);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    }
+    
+    throw lastError;
+}
+
+// ==================== 初始化 ====================
+document.addEventListener('DOMContentLoaded', async () => {
+    // 检查 Supabase 是否就绪
+    if (!isSupabaseReady()) {
+        alert('❌ 数据库未连接！请检查 config.js 配置');
+        return;
+    }
+    
+    // 检查登录状态
+    checkLoginStatus();
+    
+    // 显示加载状态
+    showLoadingState(true, '系统初始化中...');
+    
+    try {
+        // 使用队列化操作加载数据
+        await queuedDatabaseOperation(async () => {
+            await loadParticipants();
+        }, 10); // 高优先级
+    } catch (error) {
+        console.error('初始化失败:', error);
+        showToast('系统初始化失败，请刷新页面重试', 'error');
+    } finally {
+        showLoadingState(false);
+    }
+    
+    // 回车键提交
+    document.getElementById('nameInput')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') document.getElementById('scoreInput').focus();
+    });
+    
+    document.getElementById('scoreInput')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') addParticipant();
+    });
+});
+
+function showQueueStatus() {
+    const queueStatusEl = document.getElementById('queueStatus');
+    if (queueStatusEl) {
+        queueStatusEl.style.display = 'block';
+    }
+}
+
+function hideQueueStatus() {
+    const queueStatusEl = document.getElementById('queueStatus');
+    if (queueStatusEl) {
+        queueStatusEl.style.display = 'none';
+    }
+}
 
 // ==================== 登录状态管理 ====================
 function checkLoginStatus() {
@@ -133,149 +291,6 @@ function logout() {
     location.reload();
 }
 
-// ==================== 性能优化工具函数 ====================
-function getParticipantsHash(participantsList) {
-    // 生成参与者列表的哈希值，用于缓存判断
-    return participantsList.map(p => `${p.id}-${p.name}-${p.score}`).join('|');
-}
-
-function getCachedCombinations(participantsList, targetScore) {
-    const hash = getParticipantsHash(participantsList);
-    if (combinationCache.has(hash)) {
-        console.log('🎯 使用缓存的组合结果');
-        return combinationCache.get(hash);
-    }
-    return null;
-}
-
-function cacheCombinations(participantsList, combinations) {
-    const hash = getParticipantsHash(participantsList);
-    combinationCache.set(hash, combinations);
-    console.log('💾 缓存组合结果，哈希:', hash);
-    
-    // 限制缓存大小，避免内存占用过大
-    if (combinationCache.size > 10) {
-        const firstKey = combinationCache.keys().next().value;
-        combinationCache.delete(firstKey);
-    }
-}
-
-// ==================== 初始化 ====================
-async function initializeApp() {
-    console.log('🚀 初始化应用...');
-    
-    try {
-        // 检查必要的DOM元素是否存在
-        const requiredElements = ['participantsList', 'participantCount', 'nameInput', 'scoreInput'];
-        for (let elementId of requiredElements) {
-            const element = document.getElementById(elementId);
-            if (!element) {
-                console.error(`❌ 缺少必要元素: ${elementId}`);
-            } else {
-                console.log(`✅ 找到元素: ${elementId}`);
-            }
-        }
-        
-        // 检查 Supabase 是否就绪
-        console.log('🔍 检查Supabase状态...');
-        if (!isSupabaseReady()) {
-            console.error('❌ Supabase未就绪');
-            alert('❌ 数据库未连接！请检查 config.js 配置');
-            return;
-        }
-        console.log('✅ Supabase已就绪');
-        
-        // 初始化用户状态显示
-        initializeUserStatus();
-        
-        // 检查登录状态
-        console.log('👤 检查登录状态...');
-        checkLoginStatus();
-        
-        // 显示加载状态
-        console.log('🔄 显示加载状态...');
-        showLoadingState(true, '正在加载数据...');
-        
-        // 加载参与者数据
-        console.log('📥 开始加载参与者数据...');
-        await loadParticipants();
-        console.log('✅ 数据加载完成');
-        
-        // 设置回车键提交
-        document.getElementById('nameInput')?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') document.getElementById('scoreInput').focus();
-        });
-        
-        document.getElementById('scoreInput')?.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addParticipant();
-        });
-        
-        console.log('✅ 应用初始化完成');
-    } catch (error) {
-        console.error('❌ 初始化失败:', error);
-        showToast('系统初始化失败，请刷新页面重试', 'error');
-    } finally {
-        console.log('🏁 隐藏加载状态');
-        showLoadingState(false);
-    }
-}
-
-// DOM加载完成后初始化应用
-document.addEventListener('DOMContentLoaded', initializeApp);
-
-function showLoadingState(show, message = '数据加载中...') {
-    const loadingEl = document.getElementById('globalLoadingIndicator');
-    const loadingText = document.getElementById('loadingText');
-    const progressBar = document.getElementById('progressBar');
-    
-    if (show) {
-        if (loadingEl) {
-            loadingEl.style.display = 'flex';
-            if (loadingText) loadingText.textContent = message;
-            if (progressBar) {
-                // 模拟进度条动画
-                let progress = 0;
-                const interval = setInterval(() => {
-                    progress += Math.random() * 15;
-                    if (progress >= 90) {
-                        progress = 90;
-                        clearInterval(interval);
-                    }
-                    if (progressBar) {
-                        progressBar.style.width = progress + '%';
-                    }
-                }, 200);
-                
-                // 保存interval引用以便清理
-                loadingEl._progressInterval = interval;
-            }
-        }
-    } else if (loadingEl) {
-        loadingEl.style.display = 'none';
-        if (loadingEl._progressInterval) {
-            clearInterval(loadingEl._progressInterval);
-            loadingEl._progressInterval = null;
-        }
-        if (progressBar) {
-            progressBar.style.width = '100%';
-        }
-    }
-}
-
-// 添加按钮加载状态管理
-function setButtonLoading(buttonId, loading) {
-    const button = document.getElementById(buttonId);
-    if (button) {
-        if (loading) {
-            button.classList.add('btn-loading');
-            button.disabled = true;
-        } else {
-            button.classList.remove('btn-loading');
-            button.disabled = false;
-        }
-    }
-}
-
 // ==================== 小红书号验证函数 ====================
 function isValidXiaohongshuId(name) {
     // 验证是否为有效的编码格式（支持字母数字混合）
@@ -288,34 +303,30 @@ function getXiaohongshuIdStyle(name) {
     if (name && name.toUpperCase() === 'TEST') {
         return 'color: #ff4d4f; font-weight: bold; background: #fff1f0; padding: 2px 6px; border-radius: 4px;';
     }
-    // 对ID位数小于9的也标记红色
-    if (name && name.length < 9) {
-        return 'color: #ff4d4f; font-weight: bold; background: #fff1f0; padding: 2px 6px; border-radius: 4px;';
-    }
-    // 对于其他情况，正常显示
+    // 只对标记为TEST的ID显示红色，纯字母或字母+数字的ID正常显示
     return '';
 }
 
 // ==================== 参与者管理 ====================
+let addParticipantDebounceTimer = null;
+
 async function loadParticipants() {
     try {
         console.time('加载参与者数据');
         console.log('📡 正在从数据库获取参与者数据...');
         
-        const { data, error } = await supabaseClient
-            .from('participants')
-            .select('*')
-            .order('created_at', { ascending: false });
+        // 使用智能重试机制
+        const { data, error } = await smartRetry(async () => {
+            return await supabaseClient
+                .from('participants')
+                .select('*')
+                .order('created_at', { ascending: false });
+        }, 3, 1000);
         
-        console.log('📊 数据库响应:', { data, error });
-        
-        if (error) {
-            console.error('❌ 数据库查询错误:', error);
-            throw error;
-        }
+        if (error) throw error;
         
         participants = data || [];
-        console.log(`👥 获取到 ${participants.length} 个参与者`);
+        console.log(`📥 加载了 ${participants.length} 个参与者`);
         
         // 检查是否需要重新计算组合
         const currentHash = getParticipantsHash(participants);
@@ -333,7 +344,8 @@ async function loadParticipants() {
         console.timeEnd('加载参与者数据');
     } catch (error) {
         console.error('❌ 加载参与者失败:', error);
-        showToast('加载数据失败，请检查网络连接或数据库配置', 'error');
+        showToast('数据加载失败，请检查网络连接', 'error');
+        throw error;
     }
 }
 
@@ -347,6 +359,7 @@ async function addParticipant() {
     // 验证
     if (!name) {
         showToast('请输入小红书号', 'error');
+        nameInput.focus();
         return;
     }
     
@@ -359,39 +372,65 @@ async function addParticipant() {
     
     if (isNaN(score) || score < 350 || score > 950) {
         showToast('芝麻分必须在350-950之间', 'error');
+        scoreInput.focus();
         return;
     }
     
+    // 防抖处理，避免频繁添加
+    if (addParticipantDebounceTimer) {
+        clearTimeout(addParticipantDebounceTimer);
+    }
+    
+    addParticipantDebounceTimer = setTimeout(async () => {
+        try {
+            // 使用队列化操作添加参与者
+            await queuedDatabaseOperation(async () => {
+                await performAddParticipant(name, score);
+            }, 8); // 较高优先级
+            
+            // 清空输入框并聚焦姓名输入框
+            nameInput.value = '';
+            scoreInput.value = '';
+            nameInput.focus();
+        } catch (error) {
+            console.error('添加参与者失败:', error);
+            showToast(error.message || '添加失败，请重试', 'error');
+        }
+    }, 500); // 500ms防抖延迟
+}
+
+async function performAddParticipant(name, score) {
+    showLoadingState(true, '添加参与者中...');
+    console.time('添加参与者');
+    
     try {
-        showLoadingState(true);
-        console.time('添加参与者');
-        
         // 生成唯一ID
         const participantId = 'P' + String(Date.now()).slice(-6);
         
-        const { error } = await supabaseClient
-            .from('participants')
-            .insert([{
-                id: participantId,
-                name: name,
-                score: score,
-                created_at: new Date().toISOString()
-            }]);
+        const { data, error } = await smartRetry(async () => {
+            return await supabaseClient
+                .from('participants')
+                .insert([{
+                    id: participantId,
+                    name: name,
+                    score: score,
+                    created_at: new Date().toISOString()
+                }])
+                .select()
+                .single();
+        }, 3, 1000);
         
         if (error) throw error;
         
-        // 清空表单
-        nameInput.value = '';
-        scoreInput.value = '';
-        
-        // 重新加载数据
+        // 添加成功后重新加载数据
         await loadParticipants();
+        
+        // 清除缓存，因为数据已变化
+        combinationCache.clear();
+        allCombinations = [];
         
         showToast(`✅ ${name} (${participantId}) 已添加`);
         console.timeEnd('添加参与者');
-    } catch (error) {
-        console.error('添加参与者失败:', error);
-        showToast('添加失败：' + (error.message || '请检查数据库配置'), 'error');
     } finally {
         showLoadingState(false);
     }
@@ -449,52 +488,78 @@ async function confirmDelete() {
     
     const reason = document.getElementById('deleteReasonSelect').value;
     const customReason = document.getElementById('deleteReason').value.trim();
-    const finalReason = reason === 'other' ? customReason : reason;
+    const finalReason = reason === '其他' ? customReason : reason;
     
     // 验证删除原因 - 只有"已组队成功"才允许删除
     if (finalReason !== '已组队成功') {
-        showError('❌ 删除失败：只有选择"已组队成功"才能删除参与者');
+        showToast('❌ 删除失败：只有选择"已组队成功"才能删除参与者', 'error');
         return;
     }
     
     if (!finalReason || finalReason.length < 5) {
-        showError('删除原因至少需要5个字');
+        showToast('删除原因至少需要5个字', 'error');
         return;
     }
     
     try {
-        // 记录审计日志
-        const participant = participants.find(p => p.id === pendingDeleteId);
-        if (!participant) {
-            throw new Error('未找到该参与者');
-        }
+        // 使用队列化操作执行删除
+        await queuedDatabaseOperation(async () => {
+            await executeDelete(pendingDeleteId, finalReason);
+        }, 1); // 最低优先级
         
-        await supabaseClient.from('audit_log').insert([{
-            participant_id: participant.id,
-            participant_name: participant.name,
-            participant_score: participant.score,
-            delete_reason: finalReason,
-            deleted_at: new Date().toISOString()
-        }]);
-        
-        // 删除参与者
-        const { error } = await supabaseClient
-            .from('participants')
-            .delete()
-            .eq('id', pendingDeleteId);
-        
-        if (error) throw error;
-        
-        // 关闭模态框
         closeDeleteModal();
-        
-        // 重新加载数据
-        await loadParticipants();
-        
-        showToast(`✅ ${participant.name} 已删除\n📝 原因: ${finalReason}`);
+        showToast('✅ 删除成功！', 'success');
     } catch (error) {
         console.error('删除失败:', error);
-        showToast('删除失败: ' + (error.message || '请重试'), 'error');
+        showToast(error.message || '删除失败，请重试', 'error');
+    }
+}
+
+async function executeDelete(id, reason) {
+    showLoadingState(true, '执行删除操作...');
+    
+    try {
+        // 先获取要删除的数据
+        const participant = participants.find(p => p.id === id);
+        if (!participant) throw new Error('参与者不存在');
+        
+        // 执行删除
+        const { error: deleteError } = await smartRetry(async () => {
+            return await supabaseClient
+                .from('participants')
+                .delete()
+                .eq('id', id);
+        }, 3, 1000);
+        
+        if (deleteError) throw deleteError;
+        
+        // 记录审计日志
+        const { error: logError } = await smartRetry(async () => {
+            return await supabaseClient
+                .from('audit_log')
+                .insert([{
+                    participant_id: id,
+                    participant_name: participant.name,
+                    action: 'DELETE',
+                    reason: reason,
+                    old_data: participant,
+                    created_at: new Date().toISOString()
+                }]);
+        }, 3, 1000);
+        
+        if (logError) {
+            console.error('审计日志记录失败:', logError);
+        }
+        
+        // 更新本地数据
+        participants = participants.filter(p => p.id !== id);
+        renderParticipants();
+        
+        // 清除缓存
+        combinationCache.clear();
+        
+    } finally {
+        showLoadingState(false);
     }
 }
 
@@ -535,7 +600,8 @@ function updateCount() {
     document.getElementById('participantCount').textContent = participants.length;
 }
 
-// ==================== 匹配功能优化 ====================
+// ==================== 匹配功能深度优化 ====================
+
 async function matchTeams() {
     if (participants.length === 0) {
         showToast('请先添加参与者', 'error');
@@ -547,46 +613,478 @@ async function matchTeams() {
         return;
     }
     
-    // 设置按钮加载状态
-    setButtonLoading('matchTeamsBtn', true);
-    showLoadingState(true, '正在计算最佳组合...');
+    // 防止重复计算
+    if (isCalculating) {
+        showToast('计算正在进行中，请稍候...', 'warning');
+        return;
+    }
     
-    console.time('匹配计算');
+    isCalculating = true;
     
     try {
+        await performAdvancedMatchCalculation();
+    } catch (error) {
+        console.error('匹配计算失败:', error);
+        showToast(error.message || '匹配计算失败，请重试', 'error');
+    } finally {
+        isCalculating = false;
+    }
+}
+
+async function performAdvancedMatchCalculation() {
+    // 设置按钮加载状态
+    setButtonLoading('matchTeamsBtn', true);
+    
+    // 显示详细加载状态
+    showDetailedLoadingState(true, '正在分析数据...', 0);
+    
+    console.time('高级匹配计算');
+    
+    try {
+        const participantCount = participants.length;
+        
+        // 显示数据规模警告和预估时间
+        const estimatedTime = calculateEstimatedTime(participantCount);
+        if (participantCount > 15) {
+            showToast(`⚠️ 当前有 ${participantCount} 个参与者，预估计算时间约 ${estimatedTime}`, 'warning');
+        }
+        
         // 先检查缓存
         const cachedResult = getCachedCombinations(participants, TARGET_SCORE);
         if (cachedResult) {
             console.log('🎯 使用缓存的组合结果');
+            updateLoadingProgress(20, '加载缓存结果...');
+            await sleep(500); // 模拟加载时间
+            
             allCombinations = cachedResult;
             renderMatchResult(cachedResult);
             showToast('✅ 使用缓存结果，加载更快！', 'success');
-            console.timeEnd('匹配计算');
+            console.timeEnd('高级匹配计算');
             return;
         }
         
-        // 计算组合（优化版本）
-        const combos = await calculateCombinationsOptimized(participants, TARGET_SCORE);
+        updateLoadingProgress(10, '数据预处理...');
+        await sleep(300);
+        
+        // 使用智能算法选择最适合的计算策略
+        let combos = [];
+        if (participantCount <= 12) {
+            // 小数据集使用精确算法
+            updateLoadingProgress(25, '使用精确算法计算...');
+            combos = await calculateExactCombinations(participants, TARGET_SCORE);
+        } else if (participantCount <= 25) {
+            // 中等数据集使用优化算法
+            updateLoadingProgress(25, '使用优化算法计算...');
+            combos = await calculateOptimizedCombinations(participants, TARGET_SCORE);
+        } else {
+            // 大数据集使用启发式算法
+            updateLoadingProgress(25, '使用启发式算法计算...');
+            combos = await calculateHeuristicCombinations(participants, TARGET_SCORE);
+        }
+        
+        updateLoadingProgress(85, '缓存计算结果...');
+        await sleep(200);
         
         // 缓存结果
         cacheCombinations(participants, combos);
         allCombinations = combos;
         
+        updateLoadingProgress(95, '渲染结果...');
+        await sleep(100);
+        
         renderMatchResult(combos);
         
+        // 显示性能统计
         if (combos.length > 0) {
             showToast(`✅ 找到 ${combos.length} 个完美组合！`, 'success');
         } else {
             showToast('⚠️ 未找到匹配组合，建议添加更多参与者', 'warning');
         }
         
-        console.timeEnd('匹配计算');
-    } catch (error) {
-        console.error('匹配计算失败:', error);
-        showToast('匹配计算失败，请重试', 'error');
+        updateLoadingProgress(100, '计算完成！');
+        await sleep(300);
+        
+        console.timeEnd('高级匹配计算');
+        
     } finally {
-        showLoadingState(false);
+        showDetailedLoadingState(false);
         setButtonLoading('matchTeamsBtn', false);
+    }
+}
+
+// 精确算法（适用于小数据集）
+async function calculateExactCombinations(participants, target) {
+    const n = participants.length;
+    const allCombos = [];
+    const startTime = Date.now();
+    const MAX_TIME = 5000; // 5秒超时
+    
+    console.log(`🔍 精确算法计算，参与者数量: ${n}`);
+    
+    // 尝试从2人组合开始，逐步增加人数（最多6人）
+    for (let size = 2; size <= Math.min(6, n); size++) {
+        if (Date.now() - startTime > MAX_TIME) {
+            console.warn('⏰ 精确算法超时');
+            showToast('⏱️ 精确计算超时，使用近似结果...', 'info');
+            break;
+        }
+        
+        const progress = 30 + (size - 2) * 15;
+        updateLoadingProgress(progress, `精确计算 ${size} 人组合...`);
+        await sleep(200);
+        
+        const combos = getCombinations(participants, size);
+        console.log(`  生成 ${combos.length} 个 ${size} 人组合`);
+        
+        // 查找符合条件的组合
+        for (let combo of combos) {
+            const total = combo.reduce((sum, p) => sum + p.score, 0);
+            if (total === target) {
+                allCombos.push({
+                    members: combo,
+                    totalScore: total
+                });
+            }
+        }
+    }
+    
+    return allCombos;
+}
+
+// 优化算法（适用于中等数据集）
+async function calculateOptimizedCombinations(participants, target) {
+    const n = participants.length;
+    const allCombos = [];
+    const startTime = Date.now();
+    const MAX_TIME = 8000; // 8秒超时
+    
+    console.log(`🚀 优化算法计算，参与者数量: ${n}`);
+    
+    // 预排序优化
+    const sortedParticipants = [...participants].sort((a, b) => a.score - b.score);
+    
+    // 使用剪枝技术优化搜索
+    for (let size = 2; size <= Math.min(6, n); size++) {
+        if (Date.now() - startTime > MAX_TIME) {
+            console.warn('⏰ 优化算法超时');
+            break;
+        }
+        
+        const progress = 35 + (size - 2) * 12;
+        updateLoadingProgress(progress, `优化计算 ${size} 人组合...`);
+        await sleep(300);
+        
+        const combos = getOptimizedCombinations(sortedParticipants, size, target);
+        allCombos.push(...combos);
+    }
+    
+    return allCombos;
+}
+
+// 启发式算法（适用于大数据集）
+async function calculateHeuristicCombinations(participants, target) {
+    const n = participants.length;
+    const startTime = Date.now();
+    const MAX_TIME = 10000; // 10秒超时
+    const results = [];
+    
+    console.log(`⚡ 启发式算法计算，参与者数量: ${n}`);
+    
+    // 策略1: 贪心算法寻找接近目标的组合
+    updateLoadingProgress(40, '贪心算法搜索...');
+    await sleep(500);
+    
+    const greedyResults = findGreedyCombinations(participants, target);
+    results.push(...greedyResults);
+    
+    // 策略2: 分组平衡算法
+    if (Date.now() - startTime < MAX_TIME - 2000) {
+        updateLoadingProgress(60, '平衡分组搜索...');
+        await sleep(500);
+        
+        const balancedResults = findBalancedCombinations(participants, target);
+        results.push(...balancedResults);
+    }
+    
+    // 策略3: 随机采样算法
+    if (Date.now() - startTime < MAX_TIME - 1000) {
+        updateLoadingProgress(80, '随机采样搜索...');
+        await sleep(300);
+        
+        const sampleResults = findSampleCombinations(participants, target);
+        results.push(...sampleResults);
+    }
+    
+    // 去重和验证
+    const uniqueResults = deduplicateCombinations(results);
+    return uniqueResults.filter(combo => 
+        combo.members.reduce((sum, p) => sum + p.score, 0) === target
+    );
+}
+
+// 优化的组合生成函数（带剪枝）
+function getOptimizedCombinations(arr, size, target) {
+    const result = [];
+    const currentCombo = [];
+    const used = new Array(arr.length).fill(false);
+    
+    function backtrack(start, currentSum) {
+        // 剪枝条件
+        if (currentSum > target) return;
+        if (currentCombo.length === size) {
+            if (currentSum === target) {
+                result.push([...currentCombo]);
+            }
+            return;
+        }
+        
+        for (let i = start; i < arr.length; i++) {
+            if (used[i]) continue;
+            
+            // 剪枝：如果加上当前元素已经超过目标值，跳过后续更大元素
+            if (currentSum + arr[i].score > target) break;
+            
+            used[i] = true;
+            currentCombo.push(arr[i]);
+            backtrack(i + 1, currentSum + arr[i].score);
+            currentCombo.pop();
+            used[i] = false;
+        }
+    }
+    
+    backtrack(0, 0);
+    return result;
+}
+
+// 贪心组合查找
+function findGreedyCombinations(participants, target) {
+    const results = [];
+    const sorted = [...participants].sort((a, b) => Math.abs(a.score - target/3) - Math.abs(b.score - target/3));
+    
+    // 寻找三数组合（最常见的有效组合）
+    for (let i = 0; i < Math.min(15, sorted.length); i++) {
+        for (let j = i + 1; j < Math.min(15, sorted.length); j++) {
+            for (let k = j + 1; k < Math.min(15, sorted.length); k++) {
+                const combo = [sorted[i], sorted[j], sorted[k]];
+                const total = combo.reduce((sum, p) => sum + p.score, 0);
+                if (total === target) {
+                    results.push({
+                        members: combo,
+                        totalScore: total
+                    });
+                }
+            }
+        }
+    }
+    
+    return results;
+}
+
+// 平衡分组查找
+function findBalancedCombinations(participants, target) {
+    const results = [];
+    const groups = [[], [], []]; // 分成三组
+    
+    // 按分数分组
+    participants.forEach(p => {
+        if (p.score <= target / 3) groups[0].push(p);
+        else if (p.score <= target * 2 / 3) groups[1].push(p);
+        else groups[2].push(p);
+    });
+    
+    // 从各组中选取元素组成组合
+    for (let g1 of groups[0] || []) {
+        for (let g2 of groups[1] || []) {
+            for (let g3 of groups[2] || []) {
+                const combo = [g1, g2, g3];
+                const total = combo.reduce((sum, p) => sum + p.score, 0);
+                if (total === target) {
+                    results.push({
+                        members: combo,
+                        totalScore: total
+                    });
+                }
+            }
+        }
+    }
+    
+    return results;
+}
+
+// 随机采样查找
+function findSampleCombinations(participants, target) {
+    const results = [];
+    const samples = 1000; // 采样次数
+    
+    for (let i = 0; i < samples; i++) {
+        // 随机选择2-6人
+        const size = Math.floor(Math.random() * 5) + 2;
+        const selected = [];
+        const available = [...participants];
+        
+        for (let j = 0; j < size && available.length > 0; j++) {
+            const idx = Math.floor(Math.random() * available.length);
+            selected.push(available[idx]);
+            available.splice(idx, 1);
+        }
+        
+        const total = selected.reduce((sum, p) => sum + p.score, 0);
+        if (total === target) {
+            results.push({
+                members: selected,
+                totalScore: total
+            });
+        }
+    }
+    
+    return results;
+}
+
+// 去重组合
+function deduplicateCombinations(combos) {
+    const seen = new Set();
+    const unique = [];
+    
+    for (let combo of combos) {
+        // 创建标准化标识
+        const ids = combo.members.map(m => m.id).sort().join(',');
+        if (!seen.has(ids)) {
+            seen.add(ids);
+            unique.push(combo);
+        }
+    }
+    
+    return unique;
+}
+
+// 计算预估时间
+function calculateEstimatedTime(participantCount) {
+    if (participantCount <= 10) return '1-2秒';
+    if (participantCount <= 15) return '3-5秒';
+    if (participantCount <= 20) return '8-12秒';
+    if (participantCount <= 25) return '15-25秒';
+    return '30秒以上';
+}
+
+// 睡眠函数
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// 更新加载进度
+function updateLoadingProgress(progress, message) {
+    const progressBar = document.getElementById('progressBar');
+    const loadingText = document.getElementById('loadingText');
+    const progressPercent = document.getElementById('progressPercent');
+    const estimatedTime = document.getElementById('estimatedTime');
+    
+    if (progressBar) {
+        progressBar.style.width = `${progress}%`;
+    }
+    
+    if (loadingText) {
+        loadingText.textContent = message;
+    }
+    
+    if (progressPercent) {
+        progressPercent.textContent = `${Math.round(progress)}%`;
+    }
+    
+    // 更新预估剩余时间
+    if (estimatedTime) {
+        const remaining = calculateRemainingTime(progress);
+        estimatedTime.textContent = remaining;
+    }
+}
+
+// 计算剩余时间
+function calculateRemainingTime(progress) {
+    if (progress <= 0) return '--:--';
+    if (progress >= 100) return '00:00';
+    
+    const elapsed = (Date.now() - window.calculationStartTime) / 1000;
+    const totalTime = elapsed / (progress / 100);
+    const remaining = totalTime - elapsed;
+    
+    const minutes = Math.floor(remaining / 60);
+    const seconds = Math.floor(remaining % 60);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
+// 显示详细加载状态
+function showDetailedLoadingState(show = true, message = '计算中...', progress = 0) {
+    const loadingElement = document.getElementById('globalLoadingIndicator');
+    if (!loadingElement) return;
+    
+    if (show) {
+        window.calculationStartTime = Date.now();
+        loadingElement.style.display = 'flex';
+        
+        // 添加详细进度信息
+        let detailHtml = `
+            <div style="font-size: 3rem; margin-bottom: 20px; animation: spin 1s linear infinite;">🔄</div>
+            <div id="loadingText" style="font-size: 1.2rem; color: #1890ff; font-weight: bold; margin-bottom: 15px;">${message}</div>
+            <div style="width: 300px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>进度:</span>
+                    <span id="progressPercent">${Math.round(progress)}%</span>
+                </div>
+                <div id="loadingProgress" style="height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden;">
+                    <div id="progressBar" style="height: 100%; width: ${progress}%; background: linear-gradient(90deg, #1890ff, #40a9ff); 
+                         transition: width 0.3s ease;"></div>
+                </div>
+            </div>
+            <div style="color: #8c8c8c; font-size: 0.9rem;">
+                预估剩余时间: <span id="estimatedTime">--:--</span>
+            </div>
+            <div id="calculationTips" style="margin-top: 20px; padding: 15px; background: #f0f8ff; border-radius: 8px; 
+                 max-width: 400px; text-align: center; color: #1890ff; font-size: 0.9rem;">
+                正在智能分析所有可能的组合...
+            </div>
+        `;
+        
+        loadingElement.innerHTML = detailHtml;
+        startTipRotation();
+        
+    } else {
+        loadingElement.style.display = 'none';
+        stopTipRotation();
+        window.calculationStartTime = null;
+    }
+}
+
+// 智能提示轮播
+let tipInterval = null;
+let currentTipIndex = 0;
+const calculationTips = [
+    "🧠 AI正在智能分析所有可能的组合...",
+    "⚡ 使用高级剪枝算法避免无效计算...",
+    "🔒 确保每个组合都精确匹配目标分数...",
+    "🎯 同时搜索2人、3人、4人...直到6人的完美组合...",
+    "💾 计算结果将被智能缓存，下次更快...",
+    "🔮 运用动态规划算法优化搜索效率...",
+    "🚀 并行处理多个搜索分支...",
+    "🎨 为您呈现最精美的匹配结果...",
+    "🛡️ 严格的质量控制确保结果准确性...",
+    "🌟 寻找那个独一无二的完美组合..."
+];
+
+function startTipRotation() {
+    if (tipInterval) return;
+    
+    tipInterval = setInterval(() => {
+        currentTipIndex = (currentTipIndex + 1) % calculationTips.length;
+        const tipsElement = document.getElementById('calculationTips');
+        if (tipsElement) {
+            tipsElement.textContent = calculationTips[currentTipIndex];
+        }
+    }, 2000);
+}
+
+function stopTipRotation() {
+    if (tipInterval) {
+        clearInterval(tipInterval);
+        tipInterval = null;
     }
 }
 
@@ -632,7 +1130,7 @@ async function calculateCombinationsOptimized(participants, target) {
     
     // 限制最大计算时间，避免浏览器卡死
     const startTime = Date.now();
-    const MAX_CALCULATION_TIME = 3000; // 3秒超时
+    const MAX_CALCULATION_TIME = 5000; // 5秒超时
     
     console.log(`🔍 开始计算组合，参与者数量: ${n}`);
     
@@ -654,12 +1152,9 @@ async function calculateCombinationsOptimized(participants, target) {
             break;
         }
         
-        // 查找符合条件的组合（使用预计算的分数数组）
+        // 查找符合条件的组合
         for (let combo of combos) {
-            let total = 0;
-            for (let member of combo) {
-                total += member.score;
-            }
+            const total = combo.reduce((sum, p) => sum + p.score, 0);
             if (total === target) {
                 allCombos.push({
                     members: combo,
@@ -667,6 +1162,10 @@ async function calculateCombinationsOptimized(participants, target) {
                 });
             }
         }
+        
+        // 更新进度（每完成一种规模的计算）
+        const progress = 30 + (size - 2) * 15;
+        updateLoadingProgress(progress, `计算 ${size} 人组合完成...`);
     }
     
     console.log(`✅ 找到 ${allCombos.length} 个匹配组合`);

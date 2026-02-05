@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小红书ID长度标记测试 - 小于8位数红色标记</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.2rem;
+        }
+        .test-section {
+            margin: 25px 0;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        button {
+            padding: 12px 25px;
+            background: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #40a9ff;
+            transform: translateY(-2px);
+        }
+        .result-box {
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 18px;
+        }
+        .success {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .warning {
+            background: #fffbe6;
+            border: 1px solid #ffe58f;
+            color: #faad14;
+        }
+        .error {
+            background: #fff1f0;
+            border: 1px solid #ffa39e;
+            color: #ff4d4f;
+        }
+        .test-case {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #1890ff;
+        }
+        .red-marked {
+            border-left-color: #ff4d4f;
+            background: #fff1f0;
+        }
+        .normal-display {
+            border-left-color: #52c41a;
+            background: #f6ffed;
+        }
+        .demo-id {
+            display: inline-block;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .color-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 小红书ID长度标记测试</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">
+            验证小于8位数的小红书ID是否正确标记为红色
+        </p>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="color-box" style="background: #ff4d4f;"></div>
+                <span>红色标记：TEST标记 或 长度小于8位</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #52c41a;"></div>
+                <span>绿色背景：长度8位及以上</span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎯 实时测试</h2>
+            <div class="input-group">
+                <input type="text" id="testInput" placeholder="输入小红书ID进行测试..." onkeyup="testId()">
+                <button onclick="testId()">测试</button>
+            </div>
+            <div id="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>📋 自动化测试</h2>
+            <button onclick="runLengthTests()">运行长度测试</button>
+            <button onclick="showLengthDemo()">显示演示</button>
+            <div id="testResults"></div>
+            <div id="demoDisplay" style="margin-top: 20px;"></div>
+        </div>
+    </div>
+
+    <script>
+        function testId() {
+            const input = document.getElementById('testInput').value.trim();
+            const result = document.getElementById('result');
+            
+            if (!input) {
+                result.innerHTML = '<div class="result-box warning">请输入要测试的ID</div>';
+                return;
+            }
+            
+            const style = getXiaohongshuIdStyle(input);
+            const isTest = input.toUpperCase() === 'TEST';
+            const isShort = input.length < 8 && input.length > 0;
+            
+            let statusHtml = '';
+            let testCaseClass = '';
+            
+            if (isTest) {
+                statusHtml = '<span class="result-box error">🔴 TEST标记ID - 显示红色</span>';
+                testCaseClass = 'red-marked';
+            } else if (isShort) {
+                statusHtml = '<span class="result-box error">🔴 长度不足 - 显示红色</span>';
+                testCaseClass = 'red-marked';
+            } else {
+                statusHtml = '<span class="result-box success">✅ 长度合格 - 正常显示</span>';
+                testCaseClass = 'normal-display';
+            }
+            
+            result.innerHTML = `
+                <div class="test-case ${testCaseClass}">
+                    <strong>输入:</strong> ${input}<br>
+                    <strong>ID长度:</strong> ${input.length} 个字符<br>
+                    <strong>ID类型:</strong> ${isTest ? 'TEST标记' : (isShort ? '长度不足' : '长度合格')}<br>
+                    <strong>样式:</strong> ${style || '默认样式'}<br>
+                    <strong>显示效果:</strong> <span style="${style}">${input || '(空)'}</span><br>
+                    ${statusHtml}
+                </div>
+            `;
+        }
+        
+        function runLengthTests() {
+            const testCases = [
+                '123456789',    // 9位 - 正常
+                '12345678',     // 8位 - 正常
+                '1234567',      // 7位 - 红色标记
+                '123456',       // 6位 - 红色标记
+                '12345',        // 5位 - 红色标记
+                '1234',         // 4位 - 红色标记
+                '123',          // 3位 - 红色标记
+                '12',           // 2位 - 红色标记
+                '1',            // 1位 - 红色标记
+                '',             // 0位 - 正常
+                'TEST',         // TEST标记 - 红色标记
+                'test',         // 小写test - 红色标记
+                'normal_long_id_123', // 长ID - 正常
+                'user_123456789'      // 13位 - 正常
+            ];
+            
+            const results = document.getElementById('testResults');
+            results.innerHTML = '<h3>长度测试结果:</h3>';
+            
+            testCases.forEach(testCase => {
+                const style = getXiaohongshuIdStyle(testCase);
+                const isTest = testCase && testCase.toUpperCase() === 'TEST';
+                const isShort = testCase && testCase.length < 8;
+                const isRed = isTest || (isShort && testCase.length > 0);
+                
+                let statusClass = isRed ? 'red-marked' : 'normal-display';
+                let statusText = isRed ? '🔴 红色标记' : '✅ 正常显示';
+                let reason = isTest ? 'TEST标记' : (isShort ? '长度不足8位' : '长度合格');
+                
+                results.innerHTML += `
+                    <div class="test-case ${statusClass}">
+                        <strong>输入:</strong> "${testCase}"<br>
+                        <strong>ID长度:</strong> ${testCase.length} 个字符<br>
+                        <strong>标记原因:</strong> ${reason}<br>
+                        <strong>样式:</strong> ${style || '默认样式'}<br>
+                        <strong>显示效果:</strong> <span style="${style}">${testCase || '(空)'}</span><br>
+                        <strong>验证结果:</strong> ${statusText}
+                    </div>
+                `;
+            });
+        }
+        
+        function showLengthDemo() {
+            const demoIds = [
+                { id: '123', label: '短ID(3位)' },
+                { id: '1234567', label: '较短ID(7位)' },
+                { id: '12345678', label: '边界ID(8位)' },
+                { id: '123456789', label: '标准ID(9位)' },
+                { id: 'TEST', label: 'TEST标记' },
+                { id: 'very_long_identifier_123', label: '长ID(23位)' }
+            ];
+            
+            const demoDisplay = document.getElementById('demoDisplay');
+            let html = '';
+            
+            demoIds.forEach(item => {
+                const style = getXiaohongshuIdStyle(item.id);
+                const isRed = style.includes('#ff4d4f');
+                const bgColor = isRed ? '#ff4d4f' : '#52c41a';
+                const textColor = 'white';
+                
+                html += `
+                    <div class="demo-id" style="background: ${bgColor}; color: ${textColor};">
+                        ${item.label}: <span style="${style}">${item.id}</span>
+                    </div>
+                `;
+            });
+            
+            demoDisplay.innerHTML = html;
+        }
+        
+        // 页面加载完成后运行初始测试
+        document.addEventListener('DOMContentLoaded', function() {
+            runLengthTests();
+            showLengthDemo();
+        });
+    </script>
+</body>
+</html>

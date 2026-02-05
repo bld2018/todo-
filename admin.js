@@ -256,11 +256,7 @@ function getXiaohongshuIdStyle(name) {
     if (name && name.toUpperCase() === 'TEST') {
         return 'color: #ff4d4f; font-weight: bold; background: #fff1f0; padding: 2px 6px; border-radius: 4px;';
     }
-    // 对ID位数小于9的也标记红色
-    if (name && name.length < 9) {
-        return 'color: #ff4d4f; font-weight: bold; background: #fff1f0; padding: 2px 6px; border-radius: 4px;';
-    }
-    // 对于其他情况，正常显示
+    // 只对标记为TEST的ID显示红色，纯字母或字母+数字的ID正常显示
     return '';
 }
 
@@ -576,6 +572,8 @@ function getCombinations(arr, size) {
     helper(0, []);
     return result;
 }
+
+
 
 
 

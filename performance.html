@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统性能监控</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        .dashboard { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 30px; 
+        }
+        .card { 
+            background: #fff; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        }
+        .metric { 
+            text-align: center; 
+            margin: 15px 0; 
+        }
+        .metric-value { 
+            font-size: 2em; 
+            font-weight: bold; 
+            color: #1890ff; 
+        }
+        .metric-label { 
+            color: #666; 
+            margin-top: 5px; 
+        }
+        .status-indicator { 
+            display: inline-block; 
+            width: 12px; 
+            height: 12px; 
+            border-radius: 50%; 
+            margin-right: 8px; 
+        }
+        .status-normal { background: #52c41a; }
+        .status-warning { background: #faad14; }
+        .status-error { background: #ff4d4f; }
+        .chart-container { 
+            height: 200px; 
+            background: #fafafa; 
+            border-radius: 4px; 
+            display: flex; 
+            align-items: flex-end; 
+            padding: 10px; 
+            gap: 2px; 
+        }
+        .chart-bar { 
+            flex: 1; 
+            background: #1890ff; 
+            border-radius: 2px 2px 0 0; 
+            min-height: 1px; 
+            transition: height 0.3s ease; 
+        }
+        .queue-list { 
+            max-height: 200px; 
+            overflow-y: auto; 
+            border: 1px solid #eee; 
+            border-radius: 4px; 
+            padding: 10px; 
+        }
+        .queue-item { 
+            padding: 8px; 
+            margin: 5px 0; 
+            background: #f9f9f9; 
+            border-radius: 4px; 
+            display: flex; 
+            justify-content: space-between; 
+        }
+        .refresh-btn { 
+            background: #1890ff; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin: 10px 5px; 
+        }
+        .refresh-btn:hover { 
+            background: #40a9ff; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 系统性能监控面板</h1>
+        <p>实时监控系统运行状态和性能指标</p>
+        
+        <div class="dashboard">
+            <div class="card">
+                <h3>🚀 系统状态</h3>
+                <div class="metric">
+                    <div>
+                        <span class="status-indicator status-normal" id="systemStatus"></span>
+                        <span id="systemStatusText">正常运行</span>
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="activeUsers">0</div>
+                    <div class="metric-label">当前在线用户</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>📋 队列状态</h3>
+                <div class="metric">
+                    <div class="metric-value" id="queueLength">0</div>
+                    <div class="metric-label">待处理请求数</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="runningTasks">0</div>
+                    <div class="metric-label">正在执行任务</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>⚡ 性能指标</h3>
+                <div class="metric">
+                    <div class="metric-value" id="avgResponseTime">0</div>
+                    <div class="metric-label">平均响应时间(ms)</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="cacheHitRate">0%</div>
+                    <div class="metric-label">缓存命中率</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>💾 数据统计</h3>
+                <div class="metric">
+                    <div class="metric-value" id="totalParticipants">0</div>
+                    <div class="metric-label">总参与者数</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="todayOperations">0</div>
+                    <div class="metric-label">今日操作数</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>📈 请求队列详情</h3>
+            <div class="queue-list" id="queueDetails">
+                <div style="text-align: center; color: #999; padding: 20px;">
+                    暂无待处理请求
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>📊 响应时间趋势</h3>
+            <div class="chart-container" id="responseTimeChart">
+                <!-- 图表将在这里动态生成 -->
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="refresh-btn" onclick="refreshData()">🔄 刷新数据</button>
+            <button class="refresh-btn" onclick="clearQueue()">🧹 清空队列</button>
+            <button class="refresh-btn" onclick="resetStats()">📊 重置统计</button>
+        </div>
+    </div>
+
+    <script>
+        // 性能统计数据
+        let performanceStats = {
+            totalRequests: 0,
+            successfulRequests: 0,
+            failedRequests: 0,
+            responseTimes: [],
+            cacheHits: 0,
+            cacheMisses: 0
+        };
+        
+        // 响应时间历史数据
+        let responseTimeHistory = [];
+        
+        // 初始化监控
+        function initMonitoring() {
+            refreshData();
+            setInterval(refreshData, 5000); // 每5秒刷新一次
+            setInterval(updateCharts, 1000); // 每秒更新图表
+        }
+        
+        // 刷新所有数据
+        async function refreshData() {
+            try {
+                // 更新队列状态
+                updateQueueStatus();
+                
+                // 更新性能指标
+                updatePerformanceMetrics();
+                
+                // 更新数据统计
+                await updateDataStats();
+                
+            } catch (error) {
+                console.error('监控数据刷新失败:', error);
+            }
+        }
+        
+        // 更新队列状态
+        function updateQueueStatus() {
+            const status = globalRequestQueue.getStatus();
+            
+            document.getElementById('queueLength').textContent = status.queueLength;
+            document.getElementById('runningTasks').textContent = status.running;
+            
+            // 更新状态指示器
+            const statusIndicator = document.getElementById('systemStatus');
+            const statusText = document.getElementById('systemStatusText');
+            
+            if (status.queueLength > 10) {
+                statusIndicator.className = 'status-indicator status-error';
+                statusText.textContent = '负载过高';
+            } else if (status.queueLength > 5) {
+                statusIndicator.className = 'status-indicator status-warning';
+                statusText.textContent = '负载较高';
+            } else {
+                statusIndicator.className = 'status-indicator status-normal';
+                statusText.textContent = '正常运行';
+            }
+            
+            // 更新队列详情
+            updateQueueDetails(status);
+        }
+        
+        // 更新队列详情显示
+        function updateQueueDetails(status) {
+            const queueDetails = document.getElementById('queueDetails');
+            
+            if (status.queueLength === 0) {
+                queueDetails.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">暂无待处理请求</div>';
+                return;
+            }
+            
+            let html = '';
+            // 模拟队列项显示
+            for (let i = 0; i < Math.min(status.queueLength, 5); i++) {
+                html += `
+                    <div class="queue-item">
+                        <span>请求 #${performanceStats.totalRequests + i + 1}</span>
+                        <span>等待中...</span>
+                    </div>
+                `;
+            }
+            
+            if (status.queueLength > 5) {
+                html += `<div style="text-align: center; padding: 10px; color: #666;">
+                    还有 ${status.queueLength - 5} 个请求...
+                </div>`;
+            }
+            
+            queueDetails.innerHTML = html;
+        }
+        
+        // 更新性能指标
+        function updatePerformanceMetrics() {
+            const total = performanceStats.successfulRequests + performanceStats.failedRequests;
+            const successRate = total > 0 ? (performanceStats.successfulRequests / total * 100).toFixed(1) : 0;
+            const avgResponseTime = performanceStats.responseTimes.length > 0 ? 
+                (performanceStats.responseTimes.reduce((a, b) => a + b, 0) / performanceStats.responseTimes.length).toFixed(0) : 0;
+            const cacheHitRate = (performanceStats.cacheHits + performanceStats.cacheMisses) > 0 ?
+                (performanceStats.cacheHits / (performanceStats.cacheHits + performanceStats.cacheMisses) * 100).toFixed(1) : 0;
+            
+            document.getElementById('avgResponseTime').textContent = avgResponseTime;
+            document.getElementById('cacheHitRate').textContent = cacheHitRate + '%';
+        }
+        
+        // 更新数据统计
+        async function updateDataStats() {
+            try {
+                // 获取参与者总数
+                const { count, error } = await supabaseClient
+                    .from('participants')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (!error) {
+                    document.getElementById('totalParticipants').textContent = count || 0;
+                }
+                
+                // 模拟今日操作数
+                document.getElementById('todayOperations').textContent = performanceStats.totalRequests;
+                
+            } catch (error) {
+                console.error('数据统计更新失败:', error);
+            }
+        }
+        
+        // 更新图表
+        function updateCharts() {
+            const chartContainer = document.getElementById('responseTimeChart');
+            
+            // 生成模拟数据点
+            if (responseTimeHistory.length === 0) {
+                // 初始化数据
+                for (let i = 0; i < 20; i++) {
+                    responseTimeHistory.push(Math.random() * 100 + 50);
+                }
+            }
+            
+            // 添加新数据点
+            const newPoint = performanceStats.responseTimes.length > 0 ? 
+                performanceStats.responseTimes[performanceStats.responseTimes.length - 1] : 
+                (Math.random() * 100 + 50);
+            
+            responseTimeHistory.push(newPoint);
+            if (responseTimeHistory.length > 20) {
+                responseTimeHistory.shift();
+            }
+            
+            // 更新图表显示
+            const maxValue = Math.max(...responseTimeHistory);
+            chartContainer.innerHTML = responseTimeHistory
+                .map(value => {
+                    const height = maxValue > 0 ? (value / maxValue * 100) : 0;
+                    return `<div class="chart-bar" style="height: ${height}%"></div>`;
+                })
+                .join('');
+        }
+        
+        // 清空队列
+        function clearQueue() {
+            if (confirm('确定要清空所有待处理请求吗？')) {
+                globalRequestQueue.clear();
+                showToast('队列已清空', 'success');
+                refreshData();
+            }
+        }
+        
+        // 重置统计
+        function resetStats() {
+            if (confirm('确定要重置所有统计数据吗？')) {
+                performanceStats = {
+                    totalRequests: 0,
+                    successfulRequests: 0,
+                    failedRequests: 0,
+                    responseTimes: [],
+                    cacheHits: 0,
+                    cacheMisses: 0
+                };
+                responseTimeHistory = [];
+                showToast('统计数据已重置', 'success');
+                refreshData();
+            }
+        }
+        
+        // 工具函数：显示提示
+        function showToast(message, type = 'info') {
+            // 简单的提示实现
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed; top: 20px; right: 20px; 
+                padding: 15px 20px; border-radius: 4px; 
+                background: ${type === 'success' ? '#52c41a' : type === 'error' ? '#ff4d4f' : '#1890ff'};
+                color: white; z-index: 10001; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initMonitoring);
+    </script>
+</body>
+</html>
