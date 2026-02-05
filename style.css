@@ -721,3 +721,224 @@ label {
         width: 95%;
     }
 }
+
+/* ==================== 按分数查找用户功能样式 ==================== */
+
+.score-search-section {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #f0f0f0;
+}
+
+.score-search-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.score-search-icon {
+    font-size: 1.5rem;
+    color: #1890ff;
+}
+
+.score-search-controls {
+    display: flex;
+    gap: 15px;
+    align-items: end;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.score-search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 12px 15px;
+    border: 2px solid #d9d9d9;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.score-search-input:focus {
+    border-color: #1890ff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.score-search-results {
+    margin-top: 20px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.score-match-count {
+    background: linear-gradient(120deg, #1890ff 0%, #40a9ff 100%);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: inline-block;
+}
+
+.user-list-grid {
+    display: grid;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.score-user-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: #fafafa;
+    border-radius: 8px;
+    border-left: 4px solid #1890ff;
+    transition: all 0.3s ease;
+}
+
+.score-user-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background: #f0f8ff;
+}
+
+.user-basic-info {
+    flex: 1;
+}
+
+.user-id-display {
+    font-weight: bold;
+    color: #262626;
+    font-size: 1.1rem;
+    margin-bottom: 5px;
+}
+
+.user-name-display {
+    color: #595959;
+    font-size: 0.95rem;
+}
+
+.user-score-display {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #1890ff;
+    background: white;
+    padding: 8px 15px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.test-user-highlight {
+    border-left-color: #ff4d4f !important;
+    background: #fff2f0 !important;
+}
+
+.test-user-highlight .user-id-display,
+.test-user-highlight .user-name-display,
+.test-user-highlight .user-score-display {
+    color: #ff4d4f !important;
+}
+
+.test-badge {
+    display: inline-block;
+    background: #ff4d4f;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: 10px;
+}
+
+.statistics-panel {
+    background: #f0f5ff;
+    border-radius: 8px;
+    padding: 20px;
+    border-left: 4px solid #1890ff;
+    margin-top: 20px;
+}
+
+.statistics-title {
+    color: #1890ff;
+    margin: 0 0 15px 0;
+    font-size: 1.1rem;
+}
+
+.statistics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.statistic-item {
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.statistic-label {
+    font-weight: 500;
+    color: #595959;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.statistic-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #262626;
+}
+
+.empty-search-result {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.empty-search-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.6;
+}
+
+.empty-search-text {
+    color: #8c8c8c;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+}
+
+.empty-search-subtext {
+    color: #bfbfbf;
+    font-size: 0.95rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .score-search-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .score-search-input {
+        min-width: 100%;
+    }
+    
+    .score-user-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .user-score-display {
+        align-self: flex-end;
+    }
+    
+    .statistics-grid {
+        grid-template-columns: 1fr;
+    }
+}

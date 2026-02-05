@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>按分数查找用户功能测试</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .test-container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+        .demo-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 25px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .feature-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .feature-header h1 {
+            color: #1890ff;
+            margin-bottom: 10px;
+        }
+        .test-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 25px 0;
+        }
+        .sample-data {
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .feature-list {
+            background: #f0f5ff;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .feature-list h3 {
+            color: #1890ff;
+            margin-top: 0;
+        }
+        .feature-list ul {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e6f4ff;
+        }
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        .feature-list li::before {
+            content: "✅";
+            margin-right: 10px;
+        }
+        .usage-example {
+            background: #fff7e6;
+            border: 1px solid #ffd591;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .usage-example h4 {
+            color: #fa8c16;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="feature-header">
+            <h1>📊 按分数查找用户功能演示</h1>
+            <p>直接查询指定芝麻分数的所有小红书用户</p>
+        </div>
+
+        <div class="sample-data">
+            <h3>📋 测试数据示例</h3>
+            <p>系统预设了一些测试数据供功能验证：</p>
+            <ul>
+                <li><strong>分数 666:</strong> 多个用户（包含TEST测试数据）</li>
+                <li><strong>分数 888:</strong> 几个用户</li>
+                <li><strong>分数 1000:</strong> 单个用户</li>
+                <li><strong>分数 9999:</strong> 无匹配用户（测试空结果）</li>
+            </ul>
+        </div>
+
+        <div class="test-controls">
+            <button class="btn btn-primary" onclick="loadSampleData()">
+                <span class="btn-icon">📥</span> 加载测试数据
+            </button>
+            <button class="btn btn-outline" onclick="testCommonScores()">
+                <span class="btn-icon">⚡</span> 快速测试常用分数
+            </button>
+            <button class="btn btn-outline" onclick="clearAllData()">
+                <span class="btn-icon">🧹</span> 清除所有数据
+            </button>
+        </div>
+
+        <!-- 按分数查找用户功能 -->
+        <div class="demo-section">
+            <h2>🔍 按分数查找用户</h2>
+            <div class="form-group">
+                <label>芝麻分数</label>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="number" id="scoreSearchInput" class="form-control" 
+                           placeholder="输入芝麻分数（如 666）" 
+                           style="flex: 1; min-width: 200px;" min="1" max="2026">
+                    <button class="btn btn-primary" onclick="searchUsersByScore()" style="white-space: nowrap;">
+                        <span class="btn-icon">🔍</span> 查找用户
+                    </button>
+                    <button class="btn btn-outline" onclick="clearScoreSearch()" style="white-space: nowrap;">
+                        <span class="btn-icon">↺</span> 重置
+                    </button>
+                </div>
+                <small class="form-text" style="margin-top: 8px; display: block;">
+                    💡 提示：输入具体的芝麻分数，系统将显示所有拥有该分数的小红书用户
+                </small>
+            </div>
+            <div id="scoreSearchResult" class="match-result" style="display: none;"></div>
+        </div>
+
+        <div class="feature-list">
+            <h3>✨ 功能特性</h3>
+            <ul>
+                <li>直接按芝麻分数查询用户，无需组合匹配</li>
+                <li>支持1-2026范围内的任意分数查询</li>
+                <li>清晰的结果展示，包含用户ID、姓名、分数等信息</li>
+                <li>自动识别并标记测试数据（TEST标识）</li>
+                <li>提供详细的统计信息面板</li>
+                <li>支持回车键快速查询</li>
+                <li>响应式设计，适配各种屏幕尺寸</li>
+                <li>友好的空结果提示</li>
+                <li>一键重置功能</li>
+                <li>实时数据验证和错误提示</li>
+            </ul>
+        </div>
+
+        <div class="usage-example">
+            <h4>🚀 使用示例</h4>
+            <ol>
+                <li><strong>基本查询:</strong> 输入分数如"666"，点击"查找用户"</li>
+                <li><strong>快速查询:</strong> 在输入框中按回车键直接查询</li>
+                <li><strong>查看统计:</strong> 查询结果包含匹配数量、平均分数等信息</li>
+                <li><strong>测试数据:</strong> 系统会自动标记TEST开头的测试用户</li>
+                <li><strong>重置查询:</strong> 点击重置按钮清空查询条件和结果</li>
+            </ol>
+        </div>
+
+        <div class="demo-section">
+            <h3>📱 响应式测试</h3>
+            <p>调整浏览器窗口大小测试移动端适配效果：</p>
+            <ul>
+                <li>大屏幕（>768px）：横向布局，信息密度高</li>
+                <li>中等屏幕（481px-768px）：自适应网格布局</li>
+                <li>小屏幕（≤480px）：垂直堆叠布局，优化触控体验</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        // 模拟全局变量
+        let participants = [];
+
+        // Toast提示函数
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                background: ${type === 'success' ? '#52c41a' : type === 'error' ? '#ff4d4f' : type === 'warning' ? '#faad14' : '#1890ff'};
+                color: white;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                font-size: 14px;
+                font-weight: 500;
+                animation: slideInRight 0.3s ease;
+            `;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // 加载测试数据
+        function loadSampleData() {
+            participants = [
+                { id: 'P001', name: '小红书用户1', score: 666, created_at: new Date() },
+                { id: 'P002', name: 'TEST_user', score: 666, created_at: new Date() },
+                { id: 'P003', name: '小红书用户2', score: 666, created_at: new Date() },
+                { id: 'P004', name: '小红书用户3', score: 888, created_at: new Date() },
+                { id: 'P005', name: 'TEST_data', score: 888, created_at: new Date() },
+                { id: 'P006', name: '小红书用户4', score: 1000, created_at: new Date() },
+                { id: 'P007', name: 'normal_user', score: 777, created_at: new Date() }
+            ];
+            showToast('测试数据加载完成！', 'success');
+        }
+
+        // 测试常用分数
+        function testCommonScores() {
+            const commonScores = [666, 888, 1000, 777, 9999];
+            let currentIndex = 0;
+            
+            function testNextScore() {
+                if (currentIndex < commonScores.length) {
+                    document.getElementById('scoreSearchInput').value = commonScores[currentIndex];
+                    searchUsersByScore();
+                    currentIndex++;
+                    setTimeout(testNextScore, 1500);
+                }
+            }
+            
+            testNextScore();
+        }
+
+        // 清除所有数据
+        function clearAllData() {
+            participants = [];
+            clearScoreSearch();
+            showToast('所有数据已清除', 'success');
+        }
+
+        // 格式化日期函数
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // ==================== 按分数查找用户功能 ====================
+        function searchUsersByScore() {
+            const scoreInput = document.getElementById('scoreSearchInput');
+            const resultEl = document.getElementById('scoreSearchResult');
+            
+            if (!scoreInput || !resultEl) {
+                console.error('找不到按分数查找所需的DOM元素');
+                return;
+            }
+            
+            const score = parseInt(scoreInput.value.trim());
+            
+            // 输入验证
+            if (!score || score < 1 || score > 2026) {
+                showToast('请输入有效的芝麻分数（1-2026之间）', 'error');
+                scoreInput.focus();
+                return;
+            }
+            
+            // 查找匹配的用户
+            const matchingUsers = participants.filter(participant => 
+                participant.score === score
+            );
+            
+            // 显示结果
+            displayScoreSearchResults(matchingUsers, score);
+            
+            // 显示结果区域
+            resultEl.style.display = 'block';
+        }
+
+        function displayScoreSearchResults(users, targetScore) {
+            const resultEl = document.getElementById('scoreSearchResult');
+            
+            if (users.length === 0) {
+                resultEl.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <p>未找到芝麻分为 ${targetScore} 的用户</p>
+                        <p class="empty-text">当前数据库中没有该分数的参与者</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #1890ff; margin-bottom: 15px;">
+                        🎯 找到 ${users.length} 位芝麻分为 ${targetScore} 的用户
+                    </h4>
+                </div>
+                <div class="results-grid">
+            `;
+            
+            // 按ID排序显示用户
+            users.sort((a, b) => a.id.localeCompare(b.id)).forEach(user => {
+                const isTestUser = user.name && (user.name.toUpperCase() === 'TEST' || user.name.toLowerCase().includes('test'));
+                
+                html += `
+                    <div class="participant-card" style="
+                        border-left: 4px solid ${isTestUser ? '#ff4d4f' : '#52c41a'};
+                        background: ${isTestUser ? '#fff2f0' : '#f6ffed'};
+                        margin-bottom: 12px;
+                    ">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div class="participant-id" style="
+                                    font-weight: bold;
+                                    color: ${isTestUser ? '#ff4d4f' : '#262626'};
+                                    font-size: 1.1rem;
+                                ">${user.id}</div>
+                                <div class="participant-name" style="
+                                    color: ${isTestUser ? '#ff4d4f' : '#595959'};
+                                    margin: 5px 0;
+                                ">${user.name || '未填写'}</div>
+                            </div>
+                            <div class="participant-score" style="
+                                font-size: 1.3rem;
+                                font-weight: bold;
+                                color: ${isTestUser ? '#ff4d4f' : '#52c41a'};
+                            ">
+                                ${user.score} 分
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.85rem; color: #8c8c8c;">
+                            登记时间: ${formatDate(user.created_at)}
+                        </div>
+                        ${isTestUser ? `
+                            <div style="
+                                margin-top: 8px;
+                                padding: 4px 8px;
+                                background: #ff4d4f;
+                                color: white;
+                                border-radius: 4px;
+                                font-size: 0.8rem;
+                                display: inline-block;
+                            ">测试数据</div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            
+            // 添加统计信息
+            html += `
+                <div style="
+                    margin-top: 20px;
+                    padding: 15px;
+                    background: #f0f5ff;
+                    border-radius: 8px;
+                    border-left: 4px solid #1890ff;
+                ">
+                    <h5 style="margin: 0 0 10px 0; color: #1890ff;">📈 统计信息</h5>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div>
+                            <strong>查询分数:</strong> ${targetScore} 分
+                        </div>
+                        <div>
+                            <strong>匹配用户数:</strong> ${users.length} 人
+                        </div>
+                        <div>
+                            <strong>平均芝麻分:</strong> ${targetScore} 分
+                        </div>
+                        <div>
+                            <strong>查询时间:</strong> ${new Date().toLocaleString('zh-CN')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            resultEl.innerHTML = html;
+        }
+
+        function clearScoreSearch() {
+            const scoreInput = document.getElementById('scoreSearchInput');
+            const resultEl = document.getElementById('scoreSearchResult');
+            
+            if (scoreInput) {
+                scoreInput.value = '';
+            }
+            if (resultEl) {
+                resultEl.style.display = 'none';
+                resultEl.innerHTML = '';
+            }
+            
+            showToast('查询已重置', 'info');
+        }
+
+        // 为分数输入框添加回车键支持
+        document.addEventListener('DOMContentLoaded', () => {
+            const scoreInput = document.getElementById('scoreSearchInput');
+            if (scoreInput) {
+                scoreInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        searchUsersByScore();
+                    }
+                });
+            }
+        });
+
+        // 页面加载时提示
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                showToast('欢迎使用按分数查找用户功能！请先点击"加载测试数据"', 'info');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

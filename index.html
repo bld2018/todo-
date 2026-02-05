@@ -113,6 +113,33 @@
                 </div>
             </div>
 
+            <!-- 按分数查找小红书用户功能 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📊 按分数查找用户</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>芝麻分数</label>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <input type="number" id="scoreSearchInput" class="form-control" 
+                                   placeholder="输入芝麻分数（如 666）" 
+                                   style="flex: 1; min-width: 200px;" min="1" max="2026">
+                            <button class="btn btn-primary" onclick="searchUsersByScore()" style="white-space: nowrap;">
+                                <span class="btn-icon">🔍</span> 查找用户
+                            </button>
+                            <button class="btn btn-outline" onclick="clearScoreSearch()" style="white-space: nowrap;">
+                                <span class="btn-icon">↺</span> 重置
+                            </button>
+                        </div>
+                        <small class="form-text" style="margin-top: 8px; display: block;">
+                            💡 提示：输入具体的芝麻分数，系统将显示所有拥有该分数的小红书用户
+                        </small>
+                    </div>
+                    <div id="scoreSearchResult" class="match-result" style="display: none;"></div>
+                </div>
+            </div>
+
             <!-- 右侧：匹配结果 -->
             <div class="card">
                 <div class="card-header">
@@ -173,15 +200,13 @@
                 </div>
                 <div id="loginError" class="error-message" style="display: none;"></div>
                 
->>>>>>> 66b616924b5eaab7d621bb8f52523e13f5c0a271
+
                 </div>
                 <button class="btn btn-primary btn-block" onclick="login()">登录</button>
                 <div style="text-align: center; margin-top: 15px; color: #8c8c8c; font-size: 0.9rem;">
                     
                 </div>
-=======
-                
->>>>>>> 66b616924b5eaab7d621bb8f52523e13f5c0a271
+
                 </div>
             </div>
         </div>
@@ -195,7 +220,7 @@
                 <span class="close" onclick="closeAdminLoginModal()">&times;</span>
             </div>
                 
->>>>>>> 66b616924b5eaab7d621bb8f52523e13f5c0a271
+
                 </div>
             <div class="modal-body">
                 <div style="margin-bottom: 20px; padding: 15px; background: #fff7e6; border-radius: 8px; border-left: 4px solid #faad14;">
@@ -223,9 +248,7 @@
                 <div style="text-align: center; margin-top: 15px; color: #8c8c8c; font-size: 0.9rem;">
                 .
                 </div>
-=======
-                
->>>>>>> 66b616924b5eaab7d621bb8f52523e13f5c0a271
+
                 </div>
             </div>
         </div>

@@ -1611,3 +1611,164 @@ async function performAdminLogin() {
 function showAdminApprovalRequired() {
     alert('⚠️ 需要管理员审核\n\n删除操作需要管理员权限，请前往管理后台进行操作。');
 }
+
+// ==================== 按分数查找用户功能 ====================
+function searchUsersByScore() {
+    const scoreInput = document.getElementById('scoreSearchInput');
+    const resultEl = document.getElementById('scoreSearchResult');
+    
+    if (!scoreInput || !resultEl) {
+        console.error('找不到按分数查找所需的DOM元素');
+        return;
+    }
+    
+    const score = parseInt(scoreInput.value.trim());
+    
+    // 输入验证
+    if (!score || score < 1 || score > 2026) {
+        showToast('请输入有效的芝麻分数（1-2026之间）', 'error');
+        scoreInput.focus();
+        return;
+    }
+    
+    // 查找匹配的用户
+    const matchingUsers = participants.filter(participant => 
+        participant.score === score
+    );
+    
+    // 显示结果
+    displayScoreSearchResults(matchingUsers, score);
+    
+    // 显示结果区域
+    resultEl.style.display = 'block';
+}
+
+function displayScoreSearchResults(users, targetScore) {
+    const resultEl = document.getElementById('scoreSearchResult');
+    
+    if (users.length === 0) {
+        resultEl.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <p>未找到芝麻分为 ${targetScore} 的用户</p>
+                <p class="empty-text">当前数据库中没有该分数的参与者</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = `
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #1890ff; margin-bottom: 15px;">
+                🎯 找到 ${users.length} 位芝麻分为 ${targetScore} 的用户
+            </h4>
+        </div>
+        <div class="results-grid">
+    `;
+    
+    // 按ID排序显示用户
+    users.sort((a, b) => a.id.localeCompare(b.id)).forEach(user => {
+        const isTestUser = user.name && (user.name.toUpperCase() === 'TEST' || user.name.toLowerCase().includes('test'));
+        
+        html += `
+            <div class="participant-card" style="
+                border-left: 4px solid ${isTestUser ? '#ff4d4f' : '#52c41a'};
+                background: ${isTestUser ? '#fff2f0' : '#f6ffed'};
+                margin-bottom: 12px;
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div class="participant-id" style="
+                            font-weight: bold;
+                            color: ${isTestUser ? '#ff4d4f' : '#262626'};
+                            font-size: 1.1rem;
+                        ">${user.id}</div>
+                        <div class="participant-name" style="
+                            color: ${isTestUser ? '#ff4d4f' : '#595959'};
+                            margin: 5px 0;
+                        ">${user.name || '未填写'}</div>
+                    </div>
+                    <div class="participant-score" style="
+                        font-size: 1.3rem;
+                        font-weight: bold;
+                        color: ${isTestUser ? '#ff4d4f' : '#52c41a'};
+                    ">
+                        ${user.score} 分
+                    </div>
+                </div>
+                <div style="margin-top: 10px; font-size: 0.85rem; color: #8c8c8c;">
+                    登记时间: ${formatDate(user.created_at)}
+                </div>
+                ${isTestUser ? `
+                    <div style="
+                        margin-top: 8px;
+                        padding: 4px 8px;
+                        background: #ff4d4f;
+                        color: white;
+                        border-radius: 4px;
+                        font-size: 0.8rem;
+                        display: inline-block;
+                    ">测试数据</div>
+                ` : ''}
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    
+    // 添加统计信息
+    html += `
+        <div style="
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f5ff;
+            border-radius: 8px;
+            border-left: 4px solid #1890ff;
+        ">
+            <h5 style="margin: 0 0 10px 0; color: #1890ff;">📈 统计信息</h5>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div>
+                    <strong>查询分数:</strong> ${targetScore} 分
+                </div>
+                <div>
+                    <strong>匹配用户数:</strong> ${users.length} 人
+                </div>
+                <div>
+                    <strong>平均芝麻分:</strong> ${targetScore} 分
+                </div>
+                <div>
+                    <strong>查询时间:</strong> ${new Date().toLocaleString('zh-CN')}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    resultEl.innerHTML = html;
+}
+
+function clearScoreSearch() {
+    const scoreInput = document.getElementById('scoreSearchInput');
+    const resultEl = document.getElementById('scoreSearchResult');
+    
+    if (scoreInput) {
+        scoreInput.value = '';
+    }
+    if (resultEl) {
+        resultEl.style.display = 'none';
+        resultEl.innerHTML = '';
+    }
+    
+    showToast('查询已重置', 'info');
+}
+
+// 为分数输入框添加回车键支持
+document.addEventListener('DOMContentLoaded', () => {
+    const scoreInput = document.getElementById('scoreSearchInput');
+    if (scoreInput) {
+        scoreInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchUsersByScore();
+            }
+        });
+    }
+});
