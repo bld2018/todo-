@@ -936,19 +936,19 @@ function renderQueryResultByName(combos, queryName) {
         return;
     }
     
-    // 构建成功结果HTML
+    // 构建成功结果HTML - 与匹配结果格式统一
     let html = `
-        <div style="text-align: center; margin-bottom: 25px; padding: 20px; background: #e6f7ff; border-radius: 12px;">
-            <div style="font-size: 2rem; color: #1890ff; font-weight: bold;">
+        <div style="text-align: center; margin-bottom: 25px;">
+            <div style="font-size: 2.5rem; color: #52c41a; font-weight: bold; margin-bottom: 10px;">
                 🎯 找到 ${combos.length} 个包含 "${queryName}" 的组合
             </div>
-            <div style="color: #595959; margin-top: 10px;">
+            <div style="color: #8c8c8c; margin-top: 10px;">
                 在 ${allCombinations.length} 个总匹配组合中筛选
             </div>
         </div>
     `;
     
-    // 为每个匹配的组合生成卡片
+    // 为每个匹配的组合生成卡片 - 调整布局，分数放在ID下方，目标用户用黄色背景标记
     combos.forEach((combo, index) => {
         const membersHtml = combo.members.map(member => {
             const isTarget = member.name === queryName;
@@ -957,54 +957,57 @@ function renderQueryResultByName(combos, queryName) {
             
             return `
                 <div class="member-item" style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
                     padding: 12px;
-                    border: ${isTarget ? '2px solid #1890ff' : '1px solid #d9d9d9'};
+                    border: 1px solid #d9d9d9;
                     border-radius: 6px;
                     margin-bottom: 8px;
-                    background: ${isTarget ? '#e6f7ff' : 'white'};
+                    background: ${isTarget ? '#fffbe6' : 'white'};
                     transition: all 0.3s;
+                    position: relative;
                 " onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
-                    <div>
-                        <div class="member-id" style="font-weight: bold; color: #1890ff;">${member.id}</div>
+                    ${isTarget ? `
+                        <div style="
+                            position: absolute;
+                            top: -8px;
+                            right: -8px;
+                            background: #ff4d4f;
+                            color: white;
+                            width: 20px;
+                            height: 20px;
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-weight: bold;
+                            font-size: 0.7rem;
+                        ">!</div>
+                    ` : ''}
+                    <div style="text-align: center;">
+                        <div class="member-id" style="
+                            font-weight: bold; 
+                            color: #1890ff;
+                            margin-bottom: 4px;
+                        ">${member.id}</div>
+                        <div class="member-score" style="
+                            font-size: 1.2rem;
+                            font-weight: bold;
+                            color: #1677ff;
+                            margin-bottom: 8px;
+                        ">${member.score}分</div>
                         <div class="member-name" style="
-                            ${isTarget ? 'color: #1890ff; font-weight: bold;' : ''}
+                            ${isTarget ? 'color: #d48806; font-weight: bold; background: #fffbe6; padding: 4px 8px; border-radius: 4px;' : ''}
                             ${nameStyle}
                         ">${warningIcon}${member.name}</div>
-                    </div>
-                    <div class="member-score" style="font-size: 1.2rem; font-weight: bold; color: #52c41a;">
-                        ${member.score}
                     </div>
                 </div>
             `;
         }).join('');
         
         html += `
-            <div class="combo-card" style="
-                background: white;
-                border: 1px solid #d9d9d9;
-                border-radius: 12px;
-                padding: 20px;
-                margin-bottom: 20px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                transition: transform 0.2s;
-            " onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
-                <div class="combo-header" style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 15px;
-                    padding-bottom: 10px;
-                    border-bottom: 2px solid #f0f0f0;
-                ">
-                    <div class="combo-index" style="font-size: 1.2rem; font-weight: bold; color: #1890ff;">
-                        组合 #${index + 1}
-                    </div>
-                    <div class="combo-total" style="font-size: 1.3rem; font-weight: bold; color: #52c41a;">
-                        ${TARGET_SCORE} 分
-                    </div>
+            <div class="combo-card">
+                <div class="combo-header">
+                    <div class="combo-index">组合 #${index + 1}</div>
+                    <div class="combo-total">${TARGET_SCORE} 分</div>
                 </div>
                 <div class="combo-members">
                     ${membersHtml}
@@ -1016,19 +1019,13 @@ function renderQueryResultByName(combos, queryName) {
     // 添加返回按钮
     html += `
         <div style="text-align: center; margin-top: 25px;">
-            <button class="btn btn-outline" onclick="clearQuery()" style="margin-right: 10px;">
-                ← 返回全部结果
-            </button>
-            <button class="btn btn-primary" onclick="matchTeams()">
-                🔄 重新匹配
+            <button class="btn btn-outline" onclick="clearQuery()" style="padding: 10px 25px;">
+                <span class="btn-icon">←</span> 返回全部结果
             </button>
         </div>
     `;
     
     resultEl.innerHTML = html;
-    
-    // 滚动到结果区域
-    resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function clearQuery() {
