@@ -13,7 +13,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // 4. 全局配置
 const DEFAULT_ADMIN = {
     username: 'admin',
-    password: 'luo2026.'
+    password: 'luoan2026.'
 };
 
 const TARGET_SCORE = 2026;
