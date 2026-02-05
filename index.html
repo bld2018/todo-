@@ -11,47 +11,25 @@
 </head>
 <body>
     <!-- 全局加载指示器 -->
-    <div id="globalLoadingIndicator" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-         background: rgba(255,255,255,0.95); z-index: 9999; justify-content: center; 
-         align-items: center; flex-direction: column; backdrop-filter: blur(5px);">
+    <div id="globalLoadingIndicator" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255,255,255,0.95); z-index: 9999; justify-content: center;
+    align-items: center; flex-direction: column;">
         <div style="font-size: 3rem; margin-bottom: 20px; animation: spin 1s linear infinite;">🔄</div>
-        <div id="loadingText" style="font-size: 1.3rem; color: #1890ff; font-weight: bold; margin-bottom: 20px; text-align: center;">
-            正在计算最佳组合...
+        <div id="loadingText" style="font-size: 1.3rem; color: #1890ff; font-weight: bold; margin-bottom: 20px;">
+            正在计算...
         </div>
         <div style="width: 350px; margin-bottom: 15px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                 <span style="color: #595959;">计算进度:</span>
                 <span id="progressPercent" style="color: #1890ff; font-weight: bold;">0%</span>
             </div>
-            <div id="loadingProgress" style="height: 12px; background: #f0f0f0; border-radius: 6px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
-                <div id="progressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #1890ff, #40a9ff, #1890ff); 
-                     transition: width 0.4s ease; border-radius: 6px;"></div>
+            <div style="height: 12px; background: #f0f0f0; border-radius: 6px; overflow: hidden;">
+                <div id="progressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #1890ff, #40a9ff);
+                transition: width 0.3s ease; border-radius: 6px;"></div>
             </div>
         </div>
-        <div style="color: #8c8c8c; font-size: 0.95rem; margin-bottom: 25px; display: flex; align-items: center; gap: 8px;">
-            <span>⏱️</span>
-            <span>预估剩余时间:</span>
-            <span id="estimatedTime" style="color: #1890ff; font-weight: 600;">--:--</span>
-        </div>
-        <div id="calculationTips" style="margin-top: 10px; padding: 20px; background: linear-gradient(135deg, #f0f8ff, #e6f7ff); 
-             border-radius: 12px; max-width: 450px; text-align: center; color: #1890ff; font-size: 1rem; 
-             border: 1px solid #d9f0ff; box-shadow: 0 4px 15px rgba(24, 144, 255, 0.1);">
-            正在智能分析所有可能的组合...
-        </div>
-        <div style="margin-top: 25px; font-size: 0.9rem; color: #bfbfbf; text-align: center;">
-            <div>💡 系统正在运用多种算法确保结果准确</div>
-            <div style="margin-top: 5px;">🔒 所有计算过程均经过严格质量控制</div>
-        </div>
     </div>
-    
-    <script type="text/javascript">
-    (function(c,l,a,r,i,t,y){
-        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-    })(window, document, "clarity", "script", "tpli3yresu");
-</script>
-    
+
     <!-- 导航栏 -->
     <nav class="navbar">
         <div class="container">
@@ -59,7 +37,10 @@
                 <div class="logo">🎯 芝麻分组队系统</div>
             </div>
             <div class="nav-right">
-                <button class="btn btn-primary" onclick="showAdminLogin()">⚙️ 管理后台</button>
+                <span id="userStatus" style="display: none; margin-right: 15px;"></span>
+                <button class="btn btn-primary" id="adminLoginBtn">
+                    ⚙️ 管理后台
+                </button>
             </div>
         </div>
     </nav>
@@ -69,8 +50,9 @@
         <div class="container">
             <div class="announcement-icon">📢</div>
             <div class="announcement-text">
-                <strong>系统公告：</strong> 本系统查找总分<strong>恰好等于2026</strong>的组合，删除需管理员审核，所有操作均有审计日志
-                <br><strong style="color: #ff4d4f;">⚠️ 注意：</strong>红色ID为非正常小红书用户，请注意并忽略
+                <strong>系统公告：</strong>本系统查找总分<strong>恰好等于2026</strong>的3人组合，已优化支持1000+用户（小红书：又菜又爱玩，关注不迷路！）
+                <br>
+                <strong style="color: #ff4d4f;">⚠️ 注意：</strong>红色ID为非正常小红书用户，请注意并忽略
             </div>
         </div>
     </div>
@@ -84,15 +66,15 @@
                 </div>
                 <div class="card-body">
                     <div class="form-group">
-                        <label for="nameInput">小红书号：ID <span class="required">*</span></label>
+                        <label for="nameInput">小红书号：ID<span class="required">*</span></label>
                         <input type="text" id="nameInput" placeholder="例如：2789378855" class="form-control">
                     </div>
                     <div class="form-group">
-                        <label for="scoreInput">芝麻分 (350-950) <span class="required">*</span></label>
+                        <label for="scoreInput">芝麻分 (350-950)<span class="required">*</span></label>
                         <input type="number" id="scoreInput" min="350" max="950" placeholder="例如：829" class="form-control">
                     </div>
-                    <button class="btn btn-primary btn-block" onclick="addParticipant()">
-                        <span class="btn-icon">✚</span> 登记组队
+                    <button class="btn btn-primary btn-block" id="addParticipantBtn">
+                        <span class="btn-icon">✚</span>登记组队
                     </button>
                 </div>
             </div>
@@ -113,7 +95,7 @@
                 </div>
             </div>
 
-            <!-- 按分数查找小红书用户功能 -->
+            <!-- 按分数查找 -->
             <div class="card">
                 <div class="card-header">
                     <h3>📊 按分数查找用户</h3>
@@ -122,19 +104,15 @@
                     <div class="form-group">
                         <label>芝麻分数</label>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <input type="number" id="scoreSearchInput" class="form-control" 
-                                   placeholder="输入芝麻分数（如 666）" 
-                                   style="flex: 1; min-width: 200px;" min="1" max="2026">
-                            <button class="btn btn-primary" onclick="searchUsersByScore()" style="white-space: nowrap;">
-                                <span class="btn-icon">🔍</span> 查找用户
+                            <input type="number" id="scoreSearchInput" class="form-control" placeholder="输入芝麻分数" 
+                            style="flex: 1; min-width: 150px;" min="1" max="2026">
+                            <button class="btn btn-primary" id="searchUsersBtn" style="white-space: nowrap;">
+                                <span class="btn-icon">🔍</span>查找
                             </button>
-                            <button class="btn btn-outline" onclick="clearScoreSearch()" style="white-space: nowrap;">
-                                <span class="btn-icon">↺</span> 重置
+                            <button class="btn btn-outline" id="clearScoreSearchBtn" style="white-space: nowrap;">
+                                <span class="btn-icon">↺</span>重置
                             </button>
                         </div>
-                        <small class="form-text" style="margin-top: 8px; display: block;">
-                            💡 提示：输入具体的芝麻分数，系统将显示所有拥有该分数的小红书用户
-                        </small>
                     </div>
                     <div id="scoreSearchResult" class="match-result" style="display: none;"></div>
                 </div>
@@ -143,38 +121,35 @@
             <!-- 右侧：匹配结果 -->
             <div class="card">
                 <div class="card-header">
-                    <h2>🎯 匹配结果</h2>
+                    <h2>🎯 查询2026组合</h2>
                 </div>
                 <div class="card-body">
-                    <button id="matchTeamsBtn" class="btn btn-success btn-block" onclick="matchTeams()">
-                        <span class="btn-icon">🔍</span> 立即查找所有组合
+                    <button id="matchTeamsBtn" class="btn btn-success btn-block">
+                        <span class="btn-icon">🔍</span>立即查找所有组合
                     </button>
-                    <!-- 在"立即查找所有组合"按钮下方添加 -->
-<div class="form-group" style="margin-top: 20px; margin-bottom: 20px; padding: 15px; background: #f9fbfd; border-radius: 10px;">
-    <label for="queryNameInput" style="display: block; margin-bottom: 10px; font-weight: 600; color: #1a365d;">
-        🔍 查询包含小红书号的组合
-    </label>
-    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <input type="text" id="queryNameInput" class="form-control" 
-               placeholder="输入小红书号（如 2789378855）" 
-               style="flex: 1; min-width: 200px;">
-        <button class="btn btn-primary" onclick="queryCombinations()" style="white-space: nowrap;">
-            <span class="btn-icon">🔍</span> 查询组合
-        </button>
-        <button class="btn btn-danger" onclick="clearQuery()" style="white-space: nowrap;">
-            <span class="btn-icon">↺</span> 重置
-        </button>
-    </div>
-    <small class="form-text" style="margin-top: 8px; display: block;">
-        💡 提示：输入小红书号，系统将显示所有包含该用户的所有匹配组合
-    </small>
-</div>
-<div id="queryResult" class="match-result" style="display: none;"></div>
+                    
+                    <div class="form-group" style="margin-top: 20px; padding: 15px; background: #f9fbfd; border-radius: 10px;">
+                        <label for="queryNameInput" style="display: block; margin-bottom: 10px; font-weight: 600;">
+                            🔍 查询包含小红书号的组合
+                        </label>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <input type="text" id="queryNameInput" class="form-control" placeholder="输入小红书号" 
+                            style="flex: 1; min-width: 150px;">
+                            <button class="btn btn-primary" id="queryCombinationsBtn" style="white-space: nowrap;">
+                                <span class="btn-icon">🔍</span>查询
+                            </button>
+                            <button class="btn btn-danger" id="clearQueryBtn" style="white-space: nowrap;">
+                                <span class="btn-icon">↺</span>重置
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="queryResult" class="match-result" style="display: none;"></div>
                     <div id="matchResult" class="match-result">
                         <div class="empty-state">
                             <div class="empty-icon">🎯</div>
                             <p>点击上方按钮开始匹配</p>
-                            <p class="empty-text">系统将查找所有总分恰好等于2026的组合</p>
+                            <p class="empty-text">系统将查找所有总分恰好等于2026的3人组合</p>
                         </div>
                     </div>
                 </div>
@@ -191,24 +166,16 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>用户名</label>
+                    <label for="loginUsername">用户名</label>
                     <input type="text" id="loginUsername" class="form-control" placeholder="请输入用户名">
                 </div>
                 <div class="form-group">
-                    <label>密码</label>
+                    <label for="loginPassword">密码</label>
                     <input type="password" id="loginPassword" class="form-control" placeholder="请输入密码">
                 </div>
                 <div id="loginError" class="error-message" style="display: none;"></div>
-                
-
-                </div>
-                <button class="btn btn-primary btn-block" onclick="login()">登录</button>
-                <div style="text-align: center; margin-top: 15px; color: #8c8c8c; font-size: 0.9rem;">
-                    
-                </div>
-
-                </div>
             </div>
+            <button class="btn btn-primary btn-block" id="loginBtn">登录</button>
         </div>
     </div>
 
@@ -219,89 +186,54 @@
                 <h3>🔐 管理员登录</h3>
                 <span class="close" onclick="closeAdminLoginModal()">&times;</span>
             </div>
-                
-
-                </div>
             <div class="modal-body">
-                <div style="margin-bottom: 20px; padding: 15px; background: #fff7e6; border-radius: 8px; border-left: 4px solid #faad14;">
+                <div style="margin-bottom: 20px; padding: 15px; background: #fff7e6; border-radius: 8px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <div style="font-size: 1.2rem;">⚠️</div>
                         <div>
-                            <strong>注意：</strong>此功能仅供管理员使用<br>
-                            请勿随意尝试登录
+                            <strong>注意：</strong>此功能仅供管理员使用
                         </div>
                     </div>
                 </div>
-                
                 <div class="form-group">
                     <label>管理员用户名</label>
                     <input type="text" id="adminUsername" class="form-control" placeholder="请输入管理员用户名">
                 </div>
-                
                 <div class="form-group">
                     <label>管理员密码</label>
                     <input type="password" id="adminPassword" class="form-control" placeholder="请输入管理员密码">
                 </div>
-                
                 <div id="adminLoginError" class="error-message" style="display: none;"></div>
-                <button class="btn btn-primary btn-block" onclick="performAdminLogin()">登录</button>
-                <div style="text-align: center; margin-top: 15px; color: #8c8c8c; font-size: 0.9rem;">
-                .
-                </div>
-
-                </div>
+                <button class="btn btn-primary btn-block" id="performAdminLoginBtn">登录</button>
             </div>
         </div>
     </div>
 
-    <!-- 删除确认模态框 -->
-    <div id="deleteModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>🗑️ 删除确认</h3>
-                <span class="close" onclick="closeDeleteModal()">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div id="deleteTargetInfo" style="text-align: center; margin-bottom: 20px; color: #595959;"></div>
-                <div class="form-group">
-                    <label>删除原因 <span class="required">*</span></label>
-                    <select id="deleteReasonSelect" class="form-control" onchange="updateCustomReason()">
-                        <option value="">-- 选择原因 --</option>
-                        <option value="已组队成功">✅ 已组队成功</option>
-                        <option value="输入错误">✏️ 输入错误</option>
-                        <option value="重复登记">🔄 重复登记</option>
-                        <option value="用户退出">🚪 用户退出</option>
-                        <option value="其他">📝 其他原因</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label id="customReasonLabel" style="display: none;">详细说明</label>
-                    <textarea id="deleteReason" class="form-control" rows="3" 
-                        placeholder="请输入删除原因（至少5个字）" style="display: none;"></textarea>
-                </div>
-                <div id="deleteError" class="error-message" style="display: none;"></div>
-                <button class="btn btn-danger btn-block" id="confirmDeleteBtn" onclick="confirmDelete()" disabled>确认删除</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>© 2026 芝麻分精准匹配系统 | Powered by Supabase</p>
-            <p class="footer-note">
-                💡 提示：数据存储在云端，换设备登录即可查看 | 
-                🔒 所有删除操作均有审计日志，不可删除
-            </p>
-        </div>
-    </footer>
+    <style>
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .btn-loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        .btn-loading::after {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+    </style>
 
     <script src="app.js"></script>
-    
-    <!-- 51.LA统计代码 -->
-    <script charset="UTF-8" id="LA_COLLECT" src="//sdk.51.la/js-sdk-pro.min.js"></script>
-    <script>LA.init({id:"3Nk28vEuGzUHjSsp",ck:"3Nk28vEuGzUHjSsp"})</script>
-    <a target="_blank" title="51la网站统计" href="https://v6.51.la/land/3Nk28vEuGzUHjSsp"><img src="https://sdk.51.la/icon/4-3.png"></a>   
-    <script id="LA-DATA-WIDGET" crossorigin="anonymous" charset="UTF-8" src="https://v6-widget.51.la/v6/3Nk28vEuGzUHjSsp/quote.js?theme=1&f=12"></script>
 </body>
 </html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>查找功能测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .card {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, button {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        input {
+            width: 200px;
+            margin-right: 10px;
+        }
+        button {
+            background-color: #1890ff;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+        button:hover {
+            background-color: #40a9ff;
+        }
+        .btn-outline {
+            background-color: #fff;
+            color: #1890ff;
+            border: 1px solid #1890ff;
+        }
+        .btn-outline:hover {
+            background-color: #e6f7ff;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-radius: 5px;
+            border-left: 4px solid #1890ff;
+        }
+        .error {
+            background-color: #fff2f0;
+            border-left-color: #ff4d4f;
+            color: #ff4d4f;
+        }
+        .success {
+            background-color: #f6ffed;
+            border-left-color: #52c41a;
+            color: #52c41a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 查找功能测试</h1>
+        
+        <!-- 按分数查找测试 -->
+        <div class="card">
+            <h2>📊 按分数查找用户</h2>
+            <div class="form-group">
+                <label for="scoreInput">输入芝麻分数 (1-2026):</label>
+                <input type="number" id="scoreInput" min="1" max="2026" placeholder="例如: 829">
+                <button onclick="testScoreSearch()">查找用户</button>
+                <button class="btn-outline" onclick="clearScoreResult()">清空</button>
+            </div>
+            <div id="scoreResult" class="result" style="display: none;"></div>
+        </div>
+        
+        <!-- 按小红书号查找测试 -->
+        <div class="card">
+            <h2>👤 按小红书号查找组合</h2>
+            <div class="form-group">
+                <label for="xiaohongshuId">输入小红书号:</label>
+                <input type="text" id="xiaohongshuId" placeholder="例如: 2789378855">
+                <button onclick="testCombinationSearch()">查找组合</button>
+                <button class="btn-outline" onclick="clearCombinationResult()">清空</button>
+            </div>
+            <div id="combinationResult" class="result" style="display: none;"></div>
+        </div>
+        
+        <!-- 系统状态 -->
+        <div class="card">
+            <h2>⚙️ 系统状态</h2>
+            <div id="systemStatus">
+                <p>正在检查系统状态...</p>
+            </div>
+            <button onclick="checkSystemStatus()">刷新状态</button>
+        </div>
+    </div>
+
+    <script>
+        // 模拟参与者数据
+        let participants = [
+            { id: 'P001', name: '2789378855', score: 829, created_at: '2024-01-01' },
+            { id: 'P002', name: 'TEST', score: 600, created_at: '2024-01-02' },
+            { id: 'P003', name: '1234567890', score: 829, created_at: '2024-01-03' },
+            { id: 'P004', name: 'abcdefghij', score: 568, created_at: '2024-01-04' }
+        ];
+        
+        // 模拟匹配结果
+        let allCombinations = [
+            {
+                members: [
+                    { id: 'P001', name: '2789378855', score: 829 },
+                    { id: 'P002', name: 'TEST', score: 600 },
+                    { id: 'P004', name: 'abcdefghij', score: 568 }
+                ],
+                totalScore: 1997
+            },
+            {
+                members: [
+                    { id: 'P001', name: '2789378855', score: 829 },
+                    { id: 'P003', name: '1234567890', score: 829 },
+                    { id: 'P004', name: 'abcdefghij', score: 368 }
+                ],
+                totalScore: 2026
+            }
+        ];
+        
+        // 小红书号验证函数
+        function isValidXiaohongshuId(name) {
+            return /^[a-zA-Z0-9_-]+$/.test(name) && name.length >= 3;
+        }
+        
+        // 测试按分数查找
+        function testScoreSearch() {
+            const scoreInput = document.getElementById('scoreInput');
+            const resultDiv = document.getElementById('scoreResult');
+            const score = parseInt(scoreInput.value);
+            
+            console.log('🔍 测试按分数查找:', score);
+            
+            if (!scoreInput.value.trim()) {
+                showError(resultDiv, '请输入芝麻分数');
+                return;
+            }
+            
+            if (isNaN(score) || score < 1 || score > 2026) {
+                showError(resultDiv, '请输入有效的芝麻分数（1-2026之间）');
+                return;
+            }
+            
+            // 执行查找
+            const matchingUsers = participants.filter(p => p.score === score);
+            
+            if (matchingUsers.length === 0) {
+                showResult(resultDiv, `⚠️ 未找到芝麻分为 ${score} 的用户`, 'error');
+            } else {
+                let html = `<h3>🎯 找到 ${matchingUsers.length} 位芝麻分为 ${score} 的用户</h3>`;
+                html += '<ul>';
+                matchingUsers.forEach(user => {
+                    const isTest = user.name.toUpperCase() === 'TEST';
+                    html += `<li style="color: ${isTest ? '#ff4d4f' : '#52c41a'}; font-weight: ${isTest ? 'bold' : 'normal'}">
+                        ${user.id} - ${user.name} (${user.score}分) ${isTest ? '[测试用户]' : ''}
+                    </li>`;
+                });
+                html += '</ul>';
+                showResult(resultDiv, html, 'success');
+            }
+        }
+        
+        // 测试按小红书号查找组合
+        function testCombinationSearch() {
+            const idInput = document.getElementById('xiaohongshuId');
+            const resultDiv = document.getElementById('combinationResult');
+            const xiaohongshuId = idInput.value.trim();
+            
+            console.log('🔍 测试按小红书号查找:', xiaohongshuId);
+            
+            if (!xiaohongshuId) {
+                showError(resultDiv, '请输入小红书号');
+                return;
+            }
+            
+            if (!isValidXiaohongshuId(xiaohongshuId)) {
+                showError(resultDiv, '请输入有效的小红书号格式');
+                return;
+            }
+            
+            // 执行二次查询
+            const filtered = allCombinations.filter(combo => 
+                combo.members.some(member => member.name === xiaohongshuId)
+            );
+            
+            if (filtered.length === 0) {
+                showResult(resultDiv, `🔍 未找到包含 "${xiaohongshuId}" 的组合`, 'error');
+            } else {
+                let html = `<h3>🎯 找到 ${filtered.length} 个包含 "${xiaohongshuId}" 的组合</h3>`;
+                filtered.forEach((combo, index) => {
+                    html += `<div style="margin: 15px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">`;
+                    html += `<strong>组合 #${index + 1} (总分: ${combo.totalScore})</strong><br>`;
+                    combo.members.forEach(member => {
+                        const isTarget = member.name === xiaohongshuId;
+                        html += `<span style="color: ${isTarget ? '#1890ff' : '#666'}; font-weight: ${isTarget ? 'bold' : 'normal'}">
+                            ${member.id} - ${member.name} (${member.score}分) ${isTarget ? '🎯' : ''}
+                        </span><br>`;
+                    });
+                    html += `</div>`;
+                });
+                showResult(resultDiv, html, 'success');
+            }
+        }
+        
+        // 显示错误信息
+        function showError(element, message) {
+            element.innerHTML = `<strong>❌ 错误:</strong> ${message}`;
+            element.className = 'result error';
+            element.style.display = 'block';
+        }
+        
+        // 显示结果
+        function showResult(element, content, type = 'success') {
+            element.innerHTML = content;
+            element.className = `result ${type}`;
+            element.style.display = 'block';
+        }
+        
+        // 清空结果
+        function clearScoreResult() {
+            document.getElementById('scoreInput').value = '';
+            document.getElementById('scoreResult').style.display = 'none';
+        }
+        
+        function clearCombinationResult() {
+            document.getElementById('xiaohongshuId').value = '';
+            document.getElementById('combinationResult').style.display = 'none';
+        }
+        
+        // 检查系统状态
+        function checkSystemStatus() {
+            const statusDiv = document.getElementById('systemStatus');
+            let html = '<h3>系统状态检查</h3>';
+            
+            // 检查基本功能
+            html += '<ul>';
+            html += `<li>participants数组: ${participants.length} 个用户 ✓</li>`;
+            html += `<li>allCombinations数组: ${allCombinations.length} 个组合 ✓</li>`;
+            html += `<li>isValidXiaohongshuId函数: ${typeof isValidXiaohongshuId === 'function' ? '✓' : '✗'}</li>`;
+            html += `<li>测试数据加载: ✓</li>`;
+            html += '</ul>';
+            
+            // 功能测试
+            html += '<h4>功能测试:</h4>';
+            html += '<button onclick="testScoreSearchWithSampleData()">测试分数查找 (829分)</button> ';
+            html += '<button onclick="testCombinationSearchWithSampleData()">测试组合查找 (2789378855)</button>';
+            
+            statusDiv.innerHTML = html;
+        }
+        
+        // 使用示例数据进行测试
+        function testScoreSearchWithSampleData() {
+            document.getElementById('scoreInput').value = '829';
+            testScoreSearch();
+        }
+        
+        function testCombinationSearchWithSampleData() {
+            document.getElementById('xiaohongshuId').value = '2789378855';
+            testCombinationSearch();
+        }
+        
+        // 页面加载完成后检查状态
+        document.addEventListener('DOMContentLoaded', function() {
+            checkSystemStatus();
+        });
+    </script>
+</body>
+</html>

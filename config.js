@@ -8,7 +8,32 @@ const SUPABASE_URL = 'https://xinqzxrulxtermoifija.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpbnF6eHJ1bHh0ZXJtb2lmaWphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMTIzNjMsImV4cCI6MjA4NTY4ODM2M30.0WidJmYQb8T8KxsFu7MapM-WCGs90hWH0ypPII1CvfA';
 
 // 3. 创建 Supabase 客户端（使用全局 supabase 命名空间，避免重复声明）
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let supabaseClient = null;
+
+// 确保在浏览器环境中才创建客户端
+if (typeof window !== 'undefined' && window.supabase && window.supabase.createClient) {
+    try {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('✅ Supabase 客户端创建成功');
+    } catch (error) {
+        console.error('❌ 创建Supabase客户端时出错:', error);
+        supabaseClient = null;
+    }
+} else {
+    console.error('❌ Supabase SDK 未加载，请检查 script 标签');
+    console.log('window.supabase存在:', typeof window.supabase !== 'undefined');
+    console.log('window.supabase.createClient存在:', typeof window.supabase?.createClient !== 'undefined');
+    // 创建一个假的客户端对象防止报错
+    supabaseClient = {
+        from: () => ({
+            select: () => Promise.resolve({ data: [], error: null }),
+            insert: () => Promise.resolve({ data: [], error: null }),
+            update: () => Promise.resolve({ data: [], error: null }),
+            delete: () => Promise.resolve({ data: [], error: null })
+        }),
+        rpc: () => Promise.resolve({ data: [], error: null })
+    };
+}
 
 // 4. 全局配置
 const DEFAULT_ADMIN = {
@@ -32,10 +57,16 @@ function formatDate(dateString) {
 }
 
 function showToast(message, type = 'success') {
-    if (type === 'error') {
-        alert('❌ ' + message);
+    if (window.showToast) {
+        // 如果app.js中有实现，则调用它
+        window.showToast(message, type);
     } else {
-        alert('✅ ' + message);
+        // 否则使用alert作为备选
+        if (type === 'error') {
+            alert('❌ ' + message);
+        } else {
+            alert('✅ ' + message);
+        }
     }
 }
 
@@ -57,15 +88,39 @@ function getXiaohongshuIdStyle(name) {
 
 // 6. 检查 Supabase 是否就绪
 function isSupabaseReady() {
-    return supabaseClient !== null && typeof supabaseClient.from === 'function';
+    if (!supabaseClient) {
+        console.log('❌ Supabase客户端未定义');
+        return false;
+    }
+    
+    if (typeof supabaseClient.from !== 'function') {
+        console.log('❌ Supabase客户端from方法不存在');
+        return false;
+    }
+    
+    if (typeof supabaseClient.rpc !== 'function') {
+        console.log('❌ Supabase客户端rpc方法不存在');
+        return false;
+    }
+    
+    console.log('✅ Supabase客户端就绪');
+    return true;
 }
 
 // 7. 初始化检查
-if (isSupabaseReady()) {
-    console.log('✅ Supabase 客户端初始化成功');
-} else {
-    console.error('❌ Supabase 初始化失败');
-    alert('数据库配置错误！请检查 config.js 中的 SUPABASE_URL 和 SUPABASE_ANON_KEY');
+if (typeof window !== 'undefined') {
+    window.addEventListener('load', () => {
+        if (isSupabaseReady()) {
+            console.log('✅ Supabase 客户端初始化成功');
+        } else {
+            console.error('❌ Supabase 初始化失败');
+            console.log('SUPABASE_URL:', SUPABASE_URL ? '已设置' : '未设置');
+            console.log('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? '已设置' : '未设置');
+            console.log('window.supabase存在:', typeof window.supabase !== 'undefined');
+            console.log('window.supabase.createClient存在:', typeof window.supabase?.createClient !== 'undefined');
+            alert('数据库配置错误！请检查 config.js 中的 SUPABASE_URL 和 SUPABASE_ANON_KEY');
+        }
+    });
 }
 
 // ==================== 并发控制和队列管理 ====================

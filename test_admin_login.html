@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台登录测试</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background: #f6ffed; border: 1px solid #52c41a; }
+        .error { background: #fff2f0; border: 1px solid #ff4d4f; }
+        .info { background: #e6f7ff; border: 1px solid #1890ff; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔧 管理后台登录功能测试</h1>
+        
+        <div class="test-section">
+            <h3>📋 测试步骤</h3>
+            <ol>
+                <li>点击下方的"⚙️ 管理后台"按钮</li>
+                <li>观察是否弹出登录模态框</li>
+                <li>输入管理员账号密码进行测试</li>
+            </ol>
+        </div>
+        
+        <div class="test-section">
+            <h3>🎮 测试按钮</h3>
+            <button class="btn btn-primary" id="adminLoginBtn">
+                ⚙️ 管理后台
+            </button>
+            <button class="btn btn-secondary" onclick="checkElements()">
+                🧪 检查元素状态
+            </button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 测试结果</h3>
+            <div id="testResults"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>💡 管理员登录信息</h3>
+            <div class="status info">
+                <strong>用户名:</strong> admin<br>
+                <strong>密码:</strong> luo2026.<br>
+                <small>(来自 config.js 配置)</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理后台登录模态框 -->
+    <div id="adminLoginModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔐 管理员登录</h3>
+                <span class="close" onclick="closeAdminLoginModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>管理员用户名</label>
+                    <input type="text" id="adminUsername" class="form-control" placeholder="请输入管理员用户名">
+                </div>
+                <div class="form-group">
+                    <label>管理员密码</label>
+                    <input type="password" id="adminPassword" class="form-control" placeholder="请输入管理员密码">
+                </div>
+                <div id="adminLoginError" class="error-message" style="display: none;"></div>
+                <button class="btn btn-primary btn-block" onclick="performAdminLogin()">登录</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        // 测试专用的简化版本函数
+        let testResults = [];
+        
+        function logResult(message, type = 'info') {
+            const resultDiv = document.getElementById('testResults');
+            const timestamp = new Date().toLocaleTimeString();
+            const statusClass = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            resultDiv.innerHTML += `<div class="status ${statusClass}">[${timestamp}] ${message}</div>`;
+            resultDiv.scrollTop = resultDiv.scrollHeight;
+        }
+        
+        function checkElements() {
+            logResult('开始检查页面元素...', 'info');
+            
+            const adminBtn = document.getElementById('adminLoginBtn');
+            if (adminBtn) {
+                logResult('✅ 找到管理后台按钮', 'success');
+                logResult(`按钮文本: ${adminBtn.textContent.trim()}`, 'info');
+                logResult(`按钮ID: ${adminBtn.id}`, 'info');
+            } else {
+                logResult('❌ 未找到管理后台按钮', 'error');
+            }
+            
+            const modal = document.getElementById('adminLoginModal');
+            if (modal) {
+                logResult('✅ 找到登录模态框', 'success');
+                logResult(`模态框初始状态: ${modal.style.display}`, 'info');
+            } else {
+                logResult('❌ 未找到登录模态框', 'error');
+            }
+        }
+        
+        function showAdminLogin() {
+            logResult('🔧 showAdminLogin函数被调用', 'info');
+            const modal = document.getElementById('adminLoginModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                logResult('✅ 登录模态框已显示', 'success');
+            } else {
+                logResult('❌ 无法显示登录模态框', 'error');
+            }
+        }
+        
+        function closeAdminLoginModal() {
+            const modal = document.getElementById('adminLoginModal');
+            if (modal) {
+                modal.style.display = 'none';
+                logResult('✅ 登录模态框已关闭', 'info');
+            }
+        }
+        
+        async function performAdminLogin() {
+            const username = document.getElementById('adminUsername')?.value.trim();
+            const password = document.getElementById('adminPassword')?.value.trim();
+            const errorEl = document.getElementById('adminLoginError');
+            
+            logResult(`尝试登录 - 用户名: ${username || '未输入'}, 密码: ${password ? '***' : '未输入'}`, 'info');
+            
+            if (!username || !password) {
+                if (errorEl) {
+                    errorEl.textContent = '请输入用户名和密码';
+                    errorEl.style.display = 'block';
+                }
+                logResult('❌ 输入不完整', 'error');
+                return;
+            }
+            
+            // 使用config.js中的凭证验证
+            if (username === DEFAULT_ADMIN.username && password === DEFAULT_ADMIN.password) {
+                logResult('🎉 管理员登录成功！', 'success');
+                if (errorEl) errorEl.style.display = 'none';
+                setTimeout(() => {
+                    alert('登录成功！但这只是测试页面。');
+                    closeAdminLoginModal();
+                }, 1000);
+            } else {
+                if (errorEl) {
+                    errorEl.textContent = '用户名或密码错误';
+                    errorEl.style.display = 'block';
+                }
+                logResult('❌ 用户名或密码错误', 'error');
+            }
+        }
+        
+        // 页面加载完成后自动检查
+        document.addEventListener('DOMContentLoaded', () => {
+            logResult('页面加载完成，开始初始化...', 'info');
+            
+            // 绑定管理后台按钮事件
+            const adminBtn = document.getElementById('adminLoginBtn');
+            if (adminBtn) {
+                adminBtn.addEventListener('click', showAdminLogin);
+                logResult('✅ 管理后台按钮事件绑定完成', 'success');
+            }
+            
+            // 自动执行一次检查
+            setTimeout(checkElements, 1000);
+        });
+    </script>
+</body>
+</html>

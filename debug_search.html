@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调试查找功能</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug-info { background: #f0f8ff; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+        input { padding: 8px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 调试查找功能</h1>
+    
+    <div class="debug-info">
+        <h3>调试信息:</h3>
+        <div id="debugOutput"></div>
+    </div>
+    
+    <div>
+        <h3>📊 按分数查找测试</h3>
+        <input type="number" id="scoreInput" placeholder="输入分数" value="829">
+        <button onclick="testDirectScoreSearch()">直接测试分数查找</button>
+        <button onclick="testEventBinding()">测试事件绑定</button>
+        <div id="scoreResult"></div>
+    </div>
+    
+    <div>
+        <h3>👤 按小红书号查找测试</h3>
+        <input type="text" id="nameInput" placeholder="输入小红书号" value="2789378855">
+        <button onclick="testDirectNameSearch()">直接测试小红书号查找</button>
+        <div id="nameResult"></div>
+    </div>
+    
+    <button onclick="checkAllElements()">检查所有元素</button>
+    <button onclick="clearAll()">清空所有结果</button>
+
+    <script>
+        // 调试输出函数
+        function debugLog(message, isError = false) {
+            const debugOutput = document.getElementById('debugOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            logEntry.className = isError ? 'error' : 'success';
+            debugOutput.appendChild(logEntry);
+            console.log(message);
+        }
+        
+        // 模拟全局变量
+        let participants = [
+            { id: 'P001', name: '2789378855', score: 829, created_at: '2024-01-01' },
+            { id: 'P002', name: 'TEST', score: 600, created_at: '2024-01-02' },
+            { id: 'P003', name: '1234567890', score: 829, created_at: '2024-01-03' }
+        ];
+        
+        let allCombinations = [
+            {
+                members: [
+                    { id: 'P001', name: '2789378855', score: 829 },
+                    { id: 'P002', name: 'TEST', score: 600 },
+                    { id: 'P003', name: '1234567890', score: 597 }
+                ]
+            }
+        ];
+        
+        // 模拟函数
+        function showToast(message, type = 'success') {
+            debugLog(`${type.toUpperCase()}: ${message}`, type === 'error');
+        }
+        
+        function isValidXiaohongshuId(name) {
+            return /^[a-zA-Z0-9_-]+$/.test(name) && name.length >= 3;
+        }
+        
+        // 直接测试分数查找
+        function testDirectScoreSearch() {
+            debugLog('开始直接测试分数查找...');
+            const score = parseInt(document.getElementById('scoreInput').value);
+            
+            if (isNaN(score)) {
+                debugLog('输入的分数无效', true);
+                return;
+            }
+            
+            const matchingUsers = participants.filter(p => p.score === score);
+            debugLog(`找到 ${matchingUsers.length} 个匹配用户`);
+            
+            const resultDiv = document.getElementById('scoreResult');
+            if (matchingUsers.length > 0) {
+                resultDiv.innerHTML = `<div class="success">✅ 找到 ${matchingUsers.length} 个用户: ${matchingUsers.map(u => u.name).join(', ')}</div>`;
+            } else {
+                resultDiv.innerHTML = '<div class="error">❌ 未找到匹配用户</div>';
+            }
+        }
+        
+        // 直接测试小红书号查找
+        function testDirectNameSearch() {
+            debugLog('开始直接测试小红书号查找...');
+            const name = document.getElementById('nameInput').value.trim();
+            
+            if (!name) {
+                debugLog('请输入小红书号', true);
+                return;
+            }
+            
+            const filtered = allCombinations.filter(combo => 
+                combo.members.some(member => member.name === name)
+            );
+            debugLog(`找到 ${filtered.length} 个包含 "${name}" 的组合`);
+            
+            const resultDiv = document.getElementById('nameResult');
+            if (filtered.length > 0) {
+                resultDiv.innerHTML = `<div class="success">✅ 找到 ${filtered.length} 个组合</div>`;
+            } else {
+                resultDiv.innerHTML = '<div class="error">❌ 未找到匹配组合</div>';
+            }
+        }
+        
+        // 测试事件绑定
+        function testEventBinding() {
+            debugLog('开始测试事件绑定...');
+            
+            // 检查按钮是否存在
+            const buttons = [
+                'searchUsersBtn',
+                'clearScoreSearchBtn', 
+                'queryCombinationsBtn',
+                'clearQueryBtn'
+            ];
+            
+            buttons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    debugLog(`✅ 找到按钮: ${btnId}`);
+                    // 添加测试事件
+                    btn.onclick = function() {
+                        debugLog(`_clicked: ${btnId}`);
+                    };
+                } else {
+                    debugLog(`❌ 未找到按钮: ${btnId}`, true);
+                }
+            });
+            
+            // 检查输入框
+            const inputs = ['scoreSearchInput', 'queryNameInput'];
+            inputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    debugLog(`✅ 找到输入框: ${inputId}`);
+                } else {
+                    debugLog(`❌ 未找到输入框: ${inputId}`, true);
+                }
+            });
+        }
+        
+        // 检查所有元素
+        function checkAllElements() {
+            debugLog('检查所有相关元素...');
+            
+            const elementsToCheck = [
+                'searchUsersBtn', 'clearScoreSearchBtn',
+                'queryCombinationsBtn', 'clearQueryBtn',
+                'scoreSearchInput', 'queryNameInput',
+                'scoreSearchResult', 'queryResult'
+            ];
+            
+            elementsToCheck.forEach(id => {
+                const el = document.getElementById(id);
+                debugLog(`${el ? '✅' : '❌'} ${id}: ${el ? '存在' : '不存在'}`);
+            });
+        }
+        
+        // 清空所有结果
+        function clearAll() {
+            document.getElementById('debugOutput').innerHTML = '';
+            document.getElementById('scoreResult').innerHTML = '';
+            document.getElementById('nameResult').innerHTML = '';
+            debugLog('已清空所有结果');
+        }
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLog('页面加载完成，开始初始化...');
+            checkAllElements();
+        });
+    </script>
+</body>
+</html>

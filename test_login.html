@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #1890ff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #40a9ff;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .error {
+            background-color: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+        }
+        .debug {
+            background-color: #e6f7ff;
+            border: 1px solid #91d5ff;
+            color: #1890ff;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 登录功能测试</h1>
+        
+        <div class="form-group">
+            <label for="username">用户名:</label>
+            <input type="text" id="username" placeholder="请输入用户名">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">密码:</label>
+            <input type="password" id="password" placeholder="请输入密码">
+        </div>
+        
+        <button id="loginBtn">登录</button>
+        
+        <div id="result" class="result"></div>
+        
+        <div class="debug">
+            <h3>调试信息:</h3>
+            <div id="debugInfo"></div>
+        </div>
+    </div>
+
+    <script>
+        // 调试信息显示函数
+        function addDebugInfo(message) {
+            const debugInfo = document.getElementById('debugInfo');
+            const timestamp = new Date().toLocaleTimeString();
+            debugInfo.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            console.log(message);
+        }
+        
+        // 显示结果函数
+        function showResult(message, isSuccess = true) {
+            const result = document.getElementById('result');
+            result.textContent = message;
+            result.className = `result ${isSuccess ? 'success' : 'error'}`;
+            result.style.display = 'block';
+        }
+        
+        // 模拟管理员凭证
+        const DEFAULT_ADMIN = {
+            username: 'admin',
+            password: 'luo2026.'
+        };
+        
+        // 登录函数
+        async function performLogin() {
+            addDebugInfo('开始执行登录...');
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            addDebugInfo(`输入的用户名: "${username}", 密码长度: ${password.length}`);
+            
+            if (!username || !password) {
+                addDebugInfo('用户名或密码为空');
+                showResult('请输入用户名和密码', false);
+                return;
+            }
+            
+            // 模拟网络延迟
+            addDebugInfo('模拟网络请求延迟...');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // 验证凭证
+            addDebugInfo(`验证凭证: ${username === DEFAULT_ADMIN.username && password === DEFAULT_ADMIN.password}`);
+            if (username === DEFAULT_ADMIN.username && password === DEFAULT_ADMIN.password) {
+                addDebugInfo('登录验证成功');
+                showResult('✅ 登录成功！欢迎管理员！');
+                
+                // 模拟登录状态保存
+                const currentUser = {
+                    username: username,
+                    role: 'admin',
+                    loginTime: new Date().toISOString()
+                };
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                addDebugInfo('用户信息已保存到localStorage');
+                
+            } else {
+                addDebugInfo('登录验证失败');
+                showResult('❌ 用户名或密码错误', false);
+            }
+        }
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            addDebugInfo('页面加载完成');
+            
+            // 绑定登录按钮事件
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', performLogin);
+                addDebugInfo('登录按钮事件绑定成功');
+            } else {
+                addDebugInfo('❌ 未找到登录按钮');
+            }
+            
+            // 绑定回车键事件
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            
+            if (usernameInput) {
+                usernameInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') passwordInput.focus();
+                });
+            }
+            
+            if (passwordInput) {
+                passwordInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') performLogin();
+                });
+            }
+            
+            addDebugInfo('回车键事件绑定完成');
+            
+            // 显示当前登录状态
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                try {
+                    const user = JSON.parse(savedUser);
+                    addDebugInfo(`当前已登录用户: ${user.username} (${user.role})`);
+                } catch (e) {
+                    addDebugInfo('localStorage中的用户信息格式错误');
+                }
+            } else {
+                addDebugInfo('当前未登录');
+            }
+        });
+    </script>
+</body>
+</html>
