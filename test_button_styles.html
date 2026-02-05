@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>按钮样式测试</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .test-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        
+        .button-demo {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9fbfd;
+            border-radius: 8px;
+        }
+        
+        .dark-bg {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            padding: 30px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        
+        .light-bg {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border: 1px solid #e8e8e8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 按钮样式测试页面</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">
+            测试不同背景下的按钮可见性效果
+        </p>
+        
+        <!-- 深色背景测试 -->
+        <div class="test-section">
+            <h2>深色背景测试</h2>
+            <div class="dark-bg">
+                <h3>原始样式（可能不够显眼）</h3>
+                <div class="button-demo">
+                    <button class="btn btn-primary">
+                        <span class="btn-icon">🔍</span> 查询组合
+                    </button>
+                    <button class="btn btn-outline">
+                        <span class="btn-icon">↺</span> 重置
+                    </button>
+                </div>
+                
+                <h3>修改后样式（更显眼）</h3>
+                <div class="button-demo">
+                    <button class="btn btn-primary">
+                        <span class="btn-icon">🔍</span> 查询组合
+                    </button>
+                    <button class="btn btn-danger">
+                        <span class="btn-icon">↺</span> 重置
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 浅色背景测试 -->
+        <div class="test-section">
+            <h2>浅色背景测试</h2>
+            <div class="light-bg">
+                <h3>原始样式（可能不够显眼）</h3>
+                <div class="button-demo">
+                    <button class="btn btn-primary">
+                        <span class="btn-icon">🔍</span> 查询组合
+                    </button>
+                    <button class="btn btn-outline">
+                        <span class="btn-icon">↺</span> 重置
+                    </button>
+                </div>
+                
+                <h3>修改后样式（更显眼）</h3>
+                <div class="button-demo">
+                    <button class="btn btn-primary">
+                        <span class="btn-icon">🔍</span> 查询组合
+                    </button>
+                    <button class="btn btn-danger">
+                        <span class="btn-icon">↺</span> 重置
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 所有按钮样式展示 -->
+        <div class="test-section">
+            <h2>所有按钮样式展示</h2>
+            <div class="button-demo">
+                <button class="btn btn-primary">Primary</button>
+                <button class="btn btn-success">Success</button>
+                <button class="btn btn-warning">Warning</button>
+                <button class="btn btn-danger">Danger</button>
+                <button class="btn btn-outline">Outline</button>
+            </div>
+        </div>
+        
+        <!-- 实际应用场景模拟 -->
+        <div class="test-section">
+            <h2>实际应用场景模拟</h2>
+            <div style="background: white; padding: 25px; border-radius: 12px;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+                    <input type="text" class="form-control" placeholder="输入用户ID" style="flex: 1; min-width: 200px;">
+                    <button class="btn btn-primary" style="white-space: nowrap;">
+                        <span class="btn-icon">🔍</span> 查询组合
+                    </button>
+                    <button class="btn btn-danger" style="white-space: nowrap;">
+                        <span class="btn-icon">↺</span> 重置
+                    </button>
+                </div>
+                <small class="form-text" style="margin-top: 8px; display: block;">
+                    💡 提示：输入用户ID，系统将显示所有包含该用户的匹配组合
+                </small>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
