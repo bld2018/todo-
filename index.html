@@ -73,9 +73,36 @@
                         <label for="scoreInput">芝麻分 (350-950)<span class="required">*</span></label>
                         <input type="number" id="scoreInput" min="350" max="950" placeholder="例如：829" class="form-control">
                     </div>
-                    <button class="btn btn-primary btn-block" id="addParticipantBtn">
-                        <span class="btn-icon">✚</span>登记组队
+                    <button class="btn btn-primary btn-block" onclick="addParticipant()">
+                        <span class="btn-icon">✚</span> 登记组队
                     </button>
+                    <!-- 自动显示组队结果开关 -->
+                    <div class="form-group" style="margin-top: 15px; padding: 12px; background: #f0f8ff; border-radius: 8px; border: 1px solid #d1e7ff;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <label style="font-weight: 600; color: #1a365d; margin-bottom: 5px; display: block;">
+                                    🤖 自动匹配队友
+                                </label>
+                                <small style="color: #4a5568; font-size: 0.85rem;">
+                                    登记后自动显示包含该用户的所有队伍
+                                </small>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="autoMatchToggle" onchange="toggleAutoMatch(this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 自动匹配结果显示区域 -->
+                    <div id="autoMatchResult" class="auto-match-result" style="margin-top: 15px;">
+                        <div class="card-header">
+                            <h3 style="margin: 0; color: #1890ff;">🤖 自动匹配结果</h3>
+                        </div>
+                        <div id="autoMatchContent" style="margin-top: 15px;">
+                            <!-- 自动匹配结果将在这里显示 -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -231,6 +258,79 @@
             animation: spin 0.8s linear infinite;
             margin-left: 8px;
             vertical-align: middle;
+        }
+        
+        /* 查询区域过渡效果 */
+        #idQuerySection, #nameQuerySection {
+            transition: all 0.3s ease;
+        }
+        
+        /* 开关样式 */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 26px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #1890ff;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+        
+        /* 自动匹配结果区域样式 */
+        .auto-match-result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            display: none;
+        }
+        
+        .auto-match-loading {
+            text-align: center;
+            padding: 20px;
+            color: #1890ff;
+        }
+        
+        .auto-match-empty {
+            text-align: center;
+            padding: 30px;
+            color: #8c8c8c;
         }
     </style>
 

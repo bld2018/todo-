@@ -591,6 +591,9 @@ async function addParticipant() {
         // 添加到本地数组
         participants.unshift({ id: participantId, name, score, created_at: new Date().toISOString() });
         
+        // 记录最后添加的参与者
+        lastAddedParticipant = { id: participantId, name, score };
+        
         // 清空缓存
         combinationCache.clear();
         allCombinations = [];
@@ -603,6 +606,21 @@ async function addParticipant() {
         nameInput.focus();
         
         showToast(`✅ ${name} 已添加`, 'success');
+        
+        console.log('📝 Participant added:', { name, score, participantId });
+        console.log('🤖 Auto match enabled:', isAutoMatchEnabled);
+        
+        // 如果启用了自动匹配，执行自动匹配
+        if (isAutoMatchEnabled) {
+            console.log('🚀 Scheduling auto match for:', name);
+            setTimeout(() => {
+                console.log('⏰ Executing delayed auto match for:', name);
+                performAutoMatch(name);
+            }, 500); // 稍微延迟以确保UI更新完成
+        } else {
+            console.log('⏭️ Auto match not enabled, skipping');
+        }
+        
     } catch (error) {
         console.error('添加失败:', error);
         showToast('添加失败，请重试', 'error');
@@ -888,6 +906,9 @@ function queryCombinations() {
     performQueryByName(queryName);
 }
 
+/**
+ * 按小红书号查询组合
+ */
 function performQueryByName(queryName) {
     console.log(`🔍 在 ${allCombinations.length} 个组合中查找包含 "${queryName}" 的组合`);
     
@@ -909,26 +930,34 @@ function performQueryByName(queryName) {
     }
 }
 
+/**
+ * 渲染按小红书号查询的结果
+ */
 function renderQueryResultByName(combos, queryName) {
     const resultEl = document.getElementById('queryResult');
     const matchResultEl = document.getElementById('matchResult');
     
-    // 隐藏匹配结果，显示查询结果
-    if (matchResultEl) matchResultEl.style.display = 'none';
-    if (resultEl) resultEl.style.display = 'block';
+    // 隐藏常规匹配结果
+    if (matchResultEl) {
+        matchResultEl.style.display = 'none';
+    }
+    // 显示查询结果区域
+    if (resultEl) {
+        resultEl.style.display = 'block';
+    }
     
     if (combos.length === 0) {
         resultEl.innerHTML = `
-            <div style="text-align: center; padding: 40px; color: #fa8c16;">
-                <div style="font-size: 3rem; margin-bottom: 20px;">🔍</div>
-                <h3>未找到包含 "${queryName}" 的组合</h3>
-                <p>在当前的 ${allCombinations.length} 个匹配组合中未找到包含此用户的结果</p>
-                <div style="margin: 20px 0;">
-                    <button class="btn btn-primary" onclick="matchTeams()" style="margin-right: 10px;">
-                        🔄 重新匹配
+            <div style="text-align: center; padding: 30px; color: #fa8c16; background: linear-gradient(135deg, #fff7e6 0%, #ffe7ba 100%); border-radius: 12px; border: 1px solid #ffd591;">
+                <div style="font-size: 2.5rem; margin-bottom: 15px;">🔍</div>
+                <h3 style="margin-bottom: 12px; color: #d46b08;">未找到包含 "${queryName}" 的组合</h3>
+                <p style="margin-bottom: 20px; color: #fa8c16;">在当前的 ${allCombinations.length} 个匹配组合中未找到包含此用户的结果</p>
+                <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="matchTeams()" style="padding: 10px 20px; font-size: 0.95rem;">
+                        <span class="btn-icon">🔄</span> 重新匹配
                     </button>
-                    <button class="btn btn-outline" onclick="clearQuery()">
-                        ← 返回全部结果
+                    <button class="btn btn-outline" onclick="clearQuery()" style="padding: 10px 20px; font-size: 0.95rem;">
+                        <span class="btn-icon">←</span> 返回全部结果
                     </button>
                 </div>
             </div>
@@ -936,19 +965,19 @@ function renderQueryResultByName(combos, queryName) {
         return;
     }
     
-    // 构建成功结果HTML - 与匹配结果格式统一
+    // 构建成功结果HTML - 使用优化后的样式
     let html = `
-        <div style="text-align: center; margin-bottom: 25px;">
-            <div style="font-size: 2.5rem; color: #52c41a; font-weight: bold; margin-bottom: 10px;">
+        <div style="text-align: center; margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #e6f7ff 0%, #f0f5ff 100%); border-radius: 12px; border: 1px solid #91caff;">
+            <div style="font-size: 1.5rem; color: #1677ff; font-weight: bold; margin-bottom: 8px;">
                 🎯 找到 ${combos.length} 个包含 "${queryName}" 的组合
             </div>
-            <div style="color: #8c8c8c; margin-top: 10px;">
+            <div style="color: #595959; font-size: 0.95rem;">
                 在 ${allCombinations.length} 个总匹配组合中筛选
             </div>
         </div>
     `;
     
-    // 为每个匹配的组合生成卡片 - 调整布局，分数放在ID下方，目标用户用黄色背景标记
+    // 为每个匹配的组合生成卡片 - 使用优化后的样式
     combos.forEach((combo, index) => {
         const membersHtml = combo.members.map(member => {
             const isTarget = member.name === queryName;
@@ -956,60 +985,31 @@ function renderQueryResultByName(combos, queryName) {
             const warningIcon = !isValidXiaohongshuId(member.name) ? '⚠️ ' : '';
             
             return `
-                <div class="member-item" style="
-                    padding: 12px;
-                    border: 1px solid #d9d9d9;
-                    border-radius: 6px;
-                    margin-bottom: 8px;
-                    background: ${isTarget ? '#fffbe6' : 'white'};
-                    transition: all 0.3s;
-                    position: relative;
-                " onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
-                    ${isTarget ? `
-                        <div style="
-                            position: absolute;
-                            top: -8px;
-                            right: -8px;
-                            background: #ff4d4f;
-                            color: white;
-                            width: 20px;
-                            height: 20px;
-                            border-radius: 50%;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            font-weight: bold;
-                            font-size: 0.7rem;
-                        ">!</div>
-                    ` : ''}
-                    <div style="text-align: center;">
-                        <div class="member-id" style="
-                            font-weight: bold; 
-                            color: #1890ff;
-                            margin-bottom: 4px;
-                        ">${member.id}</div>
-                        <div class="member-score" style="
-                            font-size: 1.2rem;
-                            font-weight: bold;
-                            color: #1677ff;
-                            margin-bottom: 8px;
-                        ">${member.score}分</div>
-                        <div class="member-name" style="
-                            ${isTarget ? 'color: #d48806; font-weight: bold; background: #fffbe6; padding: 4px 8px; border-radius: 4px;' : ''}
-                            ${nameStyle}
-                        ">${warningIcon}${member.name}</div>
+                <div class="query-member-item" style="
+                    ${isTarget ? 'border: 2px solid #1677ff; background: #e6f4ff;' : ''}
+                    padding: 10px 6px;
+                ">
+                    <div class="query-member-id" style="font-size: 0.7rem; padding: 2px 6px;">${member.id}</div>
+                    <div class="query-member-name" style="
+                        ${isTarget ? 'color: #1677ff; font-weight: bold;' : ''}
+                        ${nameStyle}
+                        font-size: 0.8rem;
+                        margin-bottom: 3px;
+                    ">${warningIcon}${member.name}</div>
+                    <div class="query-member-score" style="font-size: 1rem; font-weight: bold; color: #1677ff;">
+                        ${member.score}分
                     </div>
                 </div>
             `;
         }).join('');
         
         html += `
-            <div class="combo-card">
-                <div class="combo-header">
-                    <div class="combo-index">组合 #${index + 1}</div>
-                    <div class="combo-total">${TARGET_SCORE} 分</div>
+            <div class="query-result-card" style="padding: 12px;">
+                <div class="query-result-header" style="margin-bottom: 10px; padding-bottom: 8px;">
+                    <div class="query-result-index" style="font-size: 0.85rem; padding: 4px 10px;">组合 #${index + 1}</div>
+                    <div class="query-result-total" style="font-size: 1.2rem;">${TARGET_SCORE} 分</div>
                 </div>
-                <div class="combo-members">
+                <div class="query-result-members" style="gap: 8px; margin-top: 8px;">
                     ${membersHtml}
                 </div>
             </div>
@@ -1019,7 +1019,118 @@ function renderQueryResultByName(combos, queryName) {
     // 添加返回按钮
     html += `
         <div style="text-align: center; margin-top: 25px;">
-            <button class="btn btn-outline" onclick="clearQuery()" style="padding: 10px 25px;">
+            <button class="btn btn-outline" onclick="clearQuery()" style="padding: 10px 25px; font-size: 1rem;">
+                <span class="btn-icon">←</span> 返回全部结果
+            </button>
+        </div>
+    `;
+    
+    resultEl.innerHTML = html;
+}
+
+function performQueryById(queryId) {
+    console.log(`🔍 在 ${allCombinations.length} 个组合中查找包含用户ID "${queryId}" 的组合`);
+    
+    // 二次查询：在已有的匹配结果中查找包含指定用户的组合
+    const filtered = allCombinations.filter(combo => 
+        combo.members.some(member => member.id.toUpperCase() === queryId.toUpperCase())
+    );
+    
+    console.log(`🔍 找到 ${filtered.length} 个包含用户ID "${queryId}" 的组合`);
+    
+    // 显示查询结果
+    renderQueryResultById(filtered, queryId);
+    
+    // 给予用户反馈
+    if (filtered.length > 0) {
+        showToast(`✅ 找到 ${filtered.length} 个包含用户ID "${queryId}" 的组合`, 'success');
+    } else {
+        showToast(`⚠️ 未找到包含用户ID "${queryId}" 的组合`, 'warning');
+    }
+}
+
+function renderQueryResultById(combos, queryId) {
+    const resultEl = document.getElementById('queryResult');
+    const matchResultEl = document.getElementById('matchResult');
+    
+    // 隐藏匹配结果，显示查询结果
+    if (matchResultEl) matchResultEl.style.display = 'none';
+    if (resultEl) resultEl.style.display = 'block';
+    
+    if (combos.length === 0) {
+        resultEl.innerHTML = `
+            <div style="text-align: center; padding: 30px; color: #fa8c16; background: linear-gradient(135deg, #fff7e6 0%, #ffe7ba 100%); border-radius: 12px; border: 1px solid #ffd591;">
+                <div style="font-size: 2.5rem; margin-bottom: 15px;">🔍</div>
+                <h3 style="margin-bottom: 12px; color: #d46b08;">未找到包含用户ID "${queryId}" 的组合</h3>
+                <p style="margin-bottom: 20px; color: #fa8c16;">在当前的 ${allCombinations.length} 个匹配组合中未找到包含此用户的结果</p>
+                <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="matchTeams()" style="padding: 10px 20px; font-size: 0.95rem;">
+                        <span class="btn-icon">🔄</span> 重新匹配
+                    </button>
+                    <button class="btn btn-outline" onclick="clearQuery()" style="padding: 10px 20px; font-size: 0.95rem;">
+                        <span class="btn-icon">←</span> 返回全部结果
+                    </button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    // 构建成功结果HTML - 使用优化后的样式
+    let html = `
+        <div style="text-align: center; margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #e6f7ff 0%, #f0f5ff 100%); border-radius: 12px; border: 1px solid #91caff;">
+            <div style="font-size: 1.5rem; color: #1677ff; font-weight: bold; margin-bottom: 8px;">
+                🎯 找到 ${combos.length} 个包含用户ID "${queryId}" 的组合
+            </div>
+            <div style="color: #595959; font-size: 0.95rem;">
+                在 ${allCombinations.length} 个总匹配组合中筛选
+            </div>
+        </div>
+    `;
+    
+    // 为每个匹配的组合生成卡片 - 使用优化后的样式
+    combos.forEach((combo, index) => {
+        const membersHtml = combo.members.map(member => {
+            const isTarget = member.id.toUpperCase() === queryId;
+            const nameStyle = getXiaohongshuIdStyle(member.name);
+            const warningIcon = !isValidXiaohongshuId(member.name) ? '⚠️ ' : '';
+            
+            return `
+                <div class="query-member-item" style="
+                    ${isTarget ? 'border: 2px solid #1677ff; background: #e6f4ff;' : ''}
+                    padding: 10px 6px;
+                ">
+                    <div class="query-member-id" style="font-size: 0.7rem; padding: 2px 6px;">${member.id}</div>
+                    <div class="query-member-name" style="
+                        ${isTarget ? 'color: #1677ff; font-weight: bold;' : ''}
+                        ${nameStyle}
+                        font-size: 0.8rem;
+                        margin-bottom: 3px;
+                    ">${warningIcon}${member.name}</div>
+                    <div class="query-member-score" style="font-size: 1rem; font-weight: bold; color: #1677ff;">
+                        ${member.score}分
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        html += `
+            <div class="query-result-card" style="padding: 12px;">
+                <div class="query-result-header" style="margin-bottom: 10px; padding-bottom: 8px;">
+                    <div class="query-result-index" style="font-size: 0.85rem; padding: 4px 10px;">组合 #${index + 1}</div>
+                    <div class="query-result-total" style="font-size: 1.2rem;">${TARGET_SCORE} 分</div>
+                </div>
+                <div class="query-result-members" style="gap: 8px; margin-top: 8px;">
+                    ${membersHtml}
+                </div>
+            </div>
+        `;
+    });
+    
+    // 添加返回按钮
+    html += `
+        <div style="text-align: center; margin-top: 25px;">
+            <button class="btn btn-outline" onclick="clearQuery()" style="padding: 10px 25px; font-size: 1rem;">
                 <span class="btn-icon">←</span> 返回全部结果
             </button>
         </div>
@@ -1229,3 +1340,206 @@ function showAdminApprovalRequired() {
 
 // ==================== 模态框关闭 ====================
 // 这些函数已经通过bindEventListeners统一绑定，无需再单独绑定
+
+// ==================== 自动匹配功能 ====================
+let isAutoMatchEnabled = false;
+let lastAddedParticipant = null;
+
+function toggleAutoMatch(enabled) {
+    console.log('🔧 toggleAutoMatch called with:', enabled);
+    isAutoMatchEnabled = enabled;
+    
+    const resultArea = document.getElementById('autoMatchResult');
+    console.log('🔍 resultArea element:', resultArea);
+    
+    if (enabled) {
+        if (resultArea) {
+            resultArea.style.display = 'block';
+            console.log('✅ Auto match result area displayed');
+        }
+        showToast('✅ 自动匹配已开启', 'success');
+        // 如果已经有参与者且最近添加了用户，立即显示结果
+        if (lastAddedParticipant && participants.length > 0) {
+            console.log('🔄 Triggering immediate auto match for:', lastAddedParticipant.name);
+            performAutoMatch(lastAddedParticipant.name);
+        }
+    } else {
+        if (resultArea) {
+            resultArea.style.display = 'none';
+            console.log('❌ Auto match result area hidden');
+        }
+        showToast('❌ 自动匹配已关闭', 'info');
+    }
+}
+
+async function performAutoMatch(xiaohongshuId) {
+    console.log('🚀 执行自动匹配，查找用户:', xiaohongshuId);
+    const resultContent = document.getElementById('autoMatchContent');
+    
+    if (!xiaohongshuId) {
+        console.log('❌ 未提供小红书号');
+        if (resultContent) {
+            resultContent.innerHTML = `
+                <div class="auto-match-empty">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">🤔</div>
+                    <p>请输入小红书号开始自动匹配</p>
+                </div>
+            `;
+        }
+        return;
+    }
+    
+    // 显示加载状态
+    if (resultContent) {
+        resultContent.innerHTML = `
+            <div class="auto-match-loading">
+                <div style="font-size: 2rem; margin-bottom: 10px; animation: spin 1s linear infinite;">🔄</div>
+                <p>正在为 ${xiaohongshuId} 寻找匹配的队友...</p>
+            </div>
+        `;
+        console.log('🔄 显示加载状态');
+    }
+    
+    try {
+        // 检查是否需要重新匹配
+        console.log('📊 当前状态 - 已有组合:', allCombinations.length, '参与者:', participants.length);
+        
+        if (allCombinations.length === 0 || participants.length < 3) {
+            if (participants.length < 3) {
+                console.log('⚠️ 参与者不足，需要至少3人才能匹配');
+                if (resultContent) {
+                    resultContent.innerHTML = `
+                        <div class="auto-match-empty">
+                            <div style="font-size: 2rem; margin-bottom: 10px;">👥</div>
+                            <p>至少需要3个参与者才能进行匹配</p>
+                            <p style="font-size: 0.9rem; color: #8c8c8c; margin-top: 10px;">
+                                当前只有 ${participants.length} 个参与者
+                            </p>
+                        </div>
+                    `;
+                }
+                return;
+            }
+            
+            console.log('🔄 执行匹配计算');
+            // 执行匹配计算
+            await matchTeams();
+            
+            // 等待匹配完成
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        // 关键修复：在所有匹配结果中进行二次查询
+        console.log('🔍 在所有匹配结果中查找包含用户', xiaohongshuId, '的组合');
+        const filtered = allCombinations.filter(combo => 
+            combo.members.some(member => member.name === xiaohongshuId)
+        );
+        
+        console.log('🎯 找到', filtered.length, '个包含', xiaohongshuId, '的组合');
+        
+        // 显示结果
+        renderAutoMatchResult(filtered, xiaohongshuId);
+        
+        // 给予用户反馈
+        if (filtered.length > 0) {
+            showToast(`✅ 自动匹配完成，找到 ${filtered.length} 个包含您的组合！`, 'success');
+        } else {
+            showToast('🔍 未找到包含您的组合，建议添加更多参与者', 'warning');
+        }
+        
+    } catch (error) {
+        console.error('❌ 自动匹配失败:', error);
+        if (resultContent) {
+            resultContent.innerHTML = `
+                <div class="auto-match-empty" style="color: #ff4d4f;">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">❌</div>
+                    <p>自动匹配失败</p>
+                    <p style="font-size: 0.9rem; margin-top: 10px;">${error.message}</p>
+                </div>
+            `;
+        }
+        showToast('自动匹配失败: ' + error.message, 'error');
+    }
+}
+
+function renderAutoMatchResult(combos, xiaohongshuId) {
+    const resultContent = document.getElementById('autoMatchContent');
+    
+    if (combos.length === 0) {
+        resultContent.innerHTML = `
+            <div class="auto-match-empty">
+                <div class="empty-icon">🔍</div>
+                <p>未找到包含 ${xiaohongshuId} 的组合</p>
+                <p style="font-size: 0.9rem; color: #8c8c8c; margin-top: 10px;">
+                    建议添加更多参与者或调整分数后重新匹配
+                </p>
+            </div>
+        `;
+        return;
+    }
+    
+    // 使用优化后的紧凑样式
+    let html = `
+        <div style="text-align: center; margin-bottom: 20px; padding: 12px; background: linear-gradient(135deg, #e6f7ff 0%, #f6ffed 100%); border-radius: 8px; border: 1px solid #91caff;">
+            <div style="font-size: 1.3rem; color: #1890ff; font-weight: bold; margin-bottom: 6px;">
+                🎯 找到 ${combos.length} 个包含 ${xiaohongshuId} 的组合
+            </div>
+            <div style="color: #595959; font-size: 0.9rem;">
+                系统已自动为您匹配到合适的队友
+            </div>
+        </div>
+    `;
+    
+    combos.forEach((combo, index) => {
+        const membersHtml = combo.members.map(member => {
+            const isTarget = member.name === xiaohongshuId;
+            const nameStyle = getXiaohongshuIdStyle(member.name);
+            const warningIcon = !isValidXiaohongshuId(member.name) ? '⚠️ ' : '';
+            
+            return `
+                <div class="member-item" style="
+                    ${isTarget ? 'border: 2px solid #1890ff; background: #e6f7ff;' : ''}
+                    padding: 10px 6px;
+                ">
+                    <div class="member-id" style="font-size: 0.7rem; padding: 2px 6px;">${member.id}</div>
+                    <div class="member-name" style="
+                        ${isTarget ? 'color: #1890ff; font-weight: bold;' : ''}
+                        ${nameStyle}
+                        font-size: 0.8rem;
+                        margin-bottom: 3px;
+                    ">${warningIcon}${member.name}</div>
+                    <div class="member-score" style="font-size: 1rem; font-weight: bold; color: #1677ff;">
+                        ${member.score}分
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        html += `
+            <div class="combo-card" style="padding: 12px;">
+                <div class="combo-header" style="margin-bottom: 10px; padding-bottom: 8px;">
+                    <div class="combo-index" style="font-size: 0.85rem; padding: 4px 10px;">组合 #${index + 1}</div>
+                    <div class="combo-total" style="font-size: 1.2rem;">${TARGET_SCORE} 分</div>
+                </div>
+                <div class="combo-members" style="gap: 8px; margin-top: 8px;">
+                    ${membersHtml}
+                </div>
+            </div>
+        `;
+    });
+    
+    resultContent.innerHTML = html;
+}
+
+function clearAutoMatch() {
+    const resultContent = document.getElementById('autoMatchContent');
+    resultContent.innerHTML = `
+        <div class="auto-match-empty">
+            <div style="font-size: 2rem; margin-bottom: 10px;">🤖</div>
+            <p>自动匹配结果已清空</p>
+            <p style="font-size: 0.9rem; color: #8c8c8c; margin-top: 10px;">
+                下次登记时将自动显示匹配结果
+            </p>
+        </div>
+    `;
+}

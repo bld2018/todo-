@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自动匹配功能测试</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 26px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #1890ff;
+        }
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+        .auto-match-result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            display: none;
+        }
+        .auto-match-loading {
+            text-align: center;
+            padding: 20px;
+            color: #1890ff;
+        }
+        .auto-match-empty {
+            text-align: center;
+            padding: 30px;
+            color: #8c8c8c;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 style="text-align: center; color: #1890ff; margin-bottom: 30px;">🤖 自动匹配功能测试</h1>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2>📋 测试登记组队</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="nameInput">小红书号：ID <span class="required">*</span></label>
+                    <input type="text" id="nameInput" placeholder="例如：2789378855" class="form-control" value="2789378855">
+                </div>
+                <div class="form-group">
+                    <label for="scoreInput">芝麻分 (350-950) <span class="required">*</span></label>
+                    <input type="number" id="scoreInput" min="350" max="950" placeholder="例如：829" class="form-control" value="829">
+                </div>
+                <button class="btn btn-primary btn-block" onclick="addTestParticipant()">
+                    <span class="btn-icon">✚</span> 登记组队
+                </button>
+                
+                <!-- 自动匹配开关 -->
+                <div class="form-group" style="margin-top: 15px; padding: 12px; background: #f0f8ff; border-radius: 8px; border: 1px solid #d1e7ff;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <label style="font-weight: 600; color: #1a365d; margin-bottom: 5px; display: block;">
+                                🤖 自动匹配队友
+                            </label>
+                            <small style="color: #4a5568; font-size: 0.85rem;">
+                                登记后自动显示包含该用户的所有队伍
+                            </small>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="autoMatchToggle" onchange="toggleAutoMatch(this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 自动匹配结果显示区域 -->
+        <div id="autoMatchResult" class="auto-match-result">
+            <div class="card-header">
+                <h3 style="margin: 0; color: #1890ff;">🤖 自动匹配结果</h3>
+            </div>
+            <div id="autoMatchContent" style="margin-top: 15px;">
+                <div class="auto-match-empty">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">🤖</div>
+                    <p>请先开启自动匹配功能并添加参与者</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 测试日志 -->
+        <div class="card" style="margin-top: 20px;">
+            <div class="card-header">
+                <h3>📋 测试日志</h3>
+            </div>
+            <div class="card-body">
+                <div id="testLog" style="background: #000; color: #00ff00; padding: 15px; border-radius: 5px; font-family: monospace; height: 200px; overflow-y: auto;">
+                    [系统] 自动匹配功能测试已启动
+                </div>
+                <div style="margin-top: 15px; text-align: center;">
+                    <button class="btn btn-outline" onclick="clearTestLog()">清空日志</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 测试数据
+        let participants = [];
+        let allCombinations = [];
+        let isAutoMatchEnabled = false;
+        let lastAddedParticipant = null;
+        const TARGET_SCORE = 2026;
+        
+        // 工具函数
+        function showToast(message, type = 'info') {
+            const colors = {
+                success: '#52c41a',
+                error: '#ff4d4f',
+                warning: '#faad14',
+                info: '#1890ff'
+            };
+            
+            const logElement = document.getElementById('testLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        function clearTestLog() {
+            document.getElementById('testLog').innerHTML = '[系统] 日志已清空\n';
+        }
+        
+        // 自动匹配功能
+        function toggleAutoMatch(enabled) {
+            isAutoMatchEnabled = enabled;
+            
+            const resultArea = document.getElementById('autoMatchResult');
+            if (enabled) {
+                resultArea.style.display = 'block';
+                showToast('✅ 自动匹配已开启', 'success');
+                // 如果已经有参与者且最近添加了用户，立即显示结果
+                if (lastAddedParticipant && participants.length > 0) {
+                    performAutoMatch(lastAddedParticipant.name);
+                }
+            } else {
+                resultArea.style.display = 'none';
+                showToast('❌ 自动匹配已关闭', 'info');
+            }
+        }
+        
+        async function performAutoMatch(xiaohongshuId) {
+            const resultContent = document.getElementById('autoMatchContent');
+            
+            if (!xiaohongshuId) {
+                resultContent.innerHTML = `
+                    <div class="auto-match-empty">
+                        <div style="font-size: 2rem; margin-bottom: 10px;">🤔</div>
+                        <p>请输入小红书号开始自动匹配</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 显示加载状态
+            resultContent.innerHTML = `
+                <div class="auto-match-loading">
+                    <div style="font-size: 2rem; margin-bottom: 10px; animation: spin 1s linear infinite;">🔄</div>
+                    <p>正在为 ${xiaohongshuId} 寻找匹配的队友...</p>
+                </div>
+            `;
+            
+            showToast(`🔍 开始为 ${xiaohongshuId} 自动匹配`);
+            
+            try {
+                // 模拟匹配延迟
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // 检查是否需要重新匹配
+                if (allCombinations.length === 0 || participants.length < 2) {
+                    if (participants.length < 2) {
+                        resultContent.innerHTML = `
+                            <div class="auto-match-empty">
+                                <div style="font-size: 2rem; margin-bottom: 10px;">👥</div>
+                                <p>至少需要2个参与者才能进行匹配</p>
+                                <p style="font-size: 0.9rem; color: #8c8c8c; margin-top: 10px;">
+                                    当前只有 ${participants.length} 个参与者
+                                </p>
+                            </div>
+                        `;
+                        showToast('⚠️ 参与者不足，无法匹配', 'warning');
+                        return;
+                    }
+                    
+                    // 执行模拟匹配
+                    showToast('🔄 执行匹配计算...', 'info');
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    allCombinations = generateMockCombinations();
+                    showToast(`✅ 匹配完成，找到 ${allCombinations.length} 个组合`, 'success');
+                }
+                
+                // 查询包含该小红书号的组合
+                const filtered = allCombinations.filter(combo => 
+                    combo.members.some(member => member.name === xiaohongshuId)
+                );
+                
+                showToast(`🎯 找到 ${filtered.length} 个包含 ${xiaohongshuId} 的组合`, 'success');
+                
+                // 显示结果
+                renderAutoMatchResult(filtered, xiaohongshuId);
+                
+            } catch (error) {
+                console.error('自动匹配失败:', error);
+                resultContent.innerHTML = `
+                    <div class="auto-match-empty" style="color: #ff4d4f;">
+                        <div style="font-size: 2rem; margin-bottom: 10px;">❌</div>
+                        <p>自动匹配失败</p>
+                        <p style="font-size: 0.9rem; margin-top: 10px;">${error.message}</p>
+                    </div>
+                `;
+                showToast(`❌ 自动匹配失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function renderAutoMatchResult(combos, xiaohongshuId) {
+            const resultContent = document.getElementById('autoMatchContent');
+            
+            if (combos.length === 0) {
+                resultContent.innerHTML = `
+                    <div class="auto-match-empty">
+                        <div style="font-size: 2rem; margin-bottom: 10px;">🔍</div>
+                        <p>未找到包含 ${xiaohongshuId} 的组合</p>
+                        <p style="font-size: 0.9rem; color: #8c8c8c; margin-top: 10px;">
+                            建议添加更多参与者或调整分数后重新匹配
+                        </p>
+                        <button class="btn btn-primary" style="margin-top: 15px;" onclick="generateMoreParticipants()">
+                            <span class="btn-icon">👥</span> 添加更多参与者
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div style="text-align: center; margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #e6f7ff 0%, #f6ffed 100%); border-radius: 8px;">
+                    <div style="font-size: 1.5rem; color: #1890ff; font-weight: bold; margin-bottom: 8px;">
+                        🎯 找到 ${combos.length} 个包含 ${xiaohongshuId} 的组合
+                    </div>
+                    <div style="color: #595959; font-size: 0.95rem;">
+                        系统已自动为您匹配到合适的队友
+                    </div>
+                </div>
+            `;
+            
+            combos.forEach((combo, index) => {
+                const membersHtml = combo.members.map(member => {
+                    const isTarget = member.name === xiaohongshuId;
+                    
+                    return `
+                        <div class="member-item" style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 10px;
+                            border: ${isTarget ? '2px solid #1890ff' : '1px solid #d9d9d9'};
+                            border-radius: 6px;
+                            margin-bottom: 8px;
+                            background: ${isTarget ? '#e6f7ff' : 'white'};
+                        ">
+                            <div>
+                                <div class="member-id" style="font-weight: bold; color: #1890ff;">${member.id}</div>
+                                <div class="member-name" style="${isTarget ? 'color: #1890ff; font-weight: bold;' : ''}">
+                                    ${member.name}
+                                </div>
+                            </div>
+                            <div class="member-score" style="font-size: 1.2rem; font-weight: bold; color: #1677ff;">
+                                ${member.score}分
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                html += `
+                    <div class="combo-card" style="margin-bottom: 20px;">
+                        <div class="combo-header">
+                            <div class="combo-index">组合 #${index + 1}</div>
+                            <div class="combo-total">${TARGET_SCORE} 分</div>
+                        </div>
+                        <div class="combo-members">
+                            ${membersHtml}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e8e8e8;">
+                    <button class="btn btn-outline" onclick="clearAutoMatchResult()" style="margin-right: 10px;">
+                        <span class="btn-icon">🗑️</span> 清空结果
+                    </button>
+                    <button class="btn btn-primary" onclick="generateMoreParticipants()">
+                        <span class="btn-icon">👥</span> 添加更多参与者
+                    </button>
+                </div>
+            `;
+            
+            resultContent.innerHTML = html;
+        }
+        
+        function clearAutoMatchResult() {
+            const resultContent = document.getElementById('autoMatchContent');
+            resultContent.innerHTML = `
+                <div class="auto-match-empty">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">🤖</div>
+                    <p>自动匹配结果已清空</p>
+                    <p style="font-size: 0.9rem; color: #8c8c8c; margin-top: 10px;">
+                        下次登记时将自动显示匹配结果
+                    </p>
+                </div>
+            `;
+            showToast('🗑️ 自动匹配结果已清空', 'info');
+        }
+        
+        // 测试功能
+        function addTestParticipant() {
+            const nameInput = document.getElementById('nameInput');
+            const scoreInput = document.getElementById('scoreInput');
+            
+            const name = nameInput.value.trim();
+            const score = parseInt(scoreInput.value);
+            
+            if (!name || isNaN(score)) {
+                showToast('❌ 请输入完整信息', 'error');
+                return;
+            }
+            
+            const participantId = 'P' + String(Date.now()).slice(-6);
+            const participant = { id: participantId, name, score, created_at: new Date().toISOString() };
+            
+            participants.unshift(participant);
+            lastAddedParticipant = participant;
+            
+            showToast(`✅ ${name} 已添加 (ID: ${participantId}, 分数: ${score})`, 'success');
+            
+            nameInput.value = '';
+            scoreInput.value = '';
+            
+            // 如果启用了自动匹配，执行自动匹配
+            if (isAutoMatchEnabled) {
+                setTimeout(() => {
+                    performAutoMatch(name);
+                }, 500);
+            }
+        }
+        
+        function generateMockCombinations() {
+            // 生成一些模拟的组合数据
+            const combinations = [];
+            if (participants.length >= 3) {
+                // 创建几个模拟组合
+                combinations.push({
+                    members: [participants[0], participants[1], participants[2]],
+                    totalScore: TARGET_SCORE
+                });
+                
+                if (participants.length >= 4) {
+                    combinations.push({
+                        members: [participants[0], participants[1], participants[3]],
+                        totalScore: TARGET_SCORE
+                    });
+                }
+            }
+            return combinations;
+        }
+        
+        function generateMoreParticipants() {
+            // 生成一些额外的测试参与者
+            const testNames = ['1234567890', '0987654321', '1111111111', '2222222222'];
+            const testScores = [675, 829, 522, 950];
+            
+            for (let i = 0; i < Math.min(4, testNames.length); i++) {
+                const participantId = 'P' + String(Date.now() + i).slice(-6);
+                const participant = {
+                    id: participantId,
+                    name: testNames[i],
+                    score: testScores[i],
+                    created_at: new Date().toISOString()
+                };
+                participants.push(participant);
+                showToast(`👥 自动生成参与者: ${testNames[i]} (${testScores[i]}分)`, 'info');
+            }
+            
+            // 重新执行自动匹配
+            if (isAutoMatchEnabled && lastAddedParticipant) {
+                setTimeout(() => {
+                    performAutoMatch(lastAddedParticipant.name);
+                }, 500);
+            }
+        }
+        
+        // 页面加载完成
+        document.addEventListener('DOMContentLoaded', () => {
+            showToast('🚀 自动匹配功能测试页面已加载', 'success');
+            showToast('💡 测试步骤：', 'info');
+            showToast('   1. 开启"自动匹配队友"开关', 'info');
+            showToast('   2. 点击"登记组队"添加参与者', 'info');
+            showToast('   3. 观察自动匹配结果显示', 'info');
+            showToast('   4. 可以点击"添加更多参与者"生成测试数据', 'info');
+        });
+    </script>
+</body>
+</html>
