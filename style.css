@@ -19,6 +19,48 @@ body {
     padding: 0 20px;
 }
 
+/* ==================== 密码强度指示器 ==================== */
+.password-strength-meter {
+    margin: 15px 0;
+}
+
+.strength-bar {
+    width: 100%;
+    height: 8px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.strength-indicator {
+    height: 100%;
+    width: 0%;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+}
+
+.strength-indicator.weak {
+    background: linear-gradient(90deg, #ff4d4f 0%, #ff7875 100%);
+    width: 33%;
+}
+
+.strength-indicator.medium {
+    background: linear-gradient(90deg, #faad14 0%, #ffc53d 100%);
+    width: 66%;
+}
+
+.strength-indicator.strong {
+    background: linear-gradient(90deg, #52c41a 0%, #73d13d 100%);
+    width: 100%;
+}
+
+.strength-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: center;
+}
+
 /* ==================== 导航栏 ==================== */
 .navbar {
     background: linear-gradient(120deg, #6a11cb 0%, #2575fc 100%);

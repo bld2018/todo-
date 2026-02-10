@@ -573,22 +573,193 @@ function getCombinations(arr, size) {
     return result;
 }
 
+// ==================== 密码修改功能 ====================
+function showChangePasswordModal() {
+    closeLoginModal(); // 关闭登录模态框
+    document.getElementById('changePasswordModal').style.display = 'flex';
+    clearChangePasswordForm();
+}
 
+function closeChangePasswordModal() {
+    document.getElementById('changePasswordModal').style.display = 'none';
+    document.getElementById('changePasswordError').style.display = 'none';
+    clearChangePasswordForm();
+}
 
+function clearChangePasswordForm() {
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmNewPassword').value = '';
+    document.getElementById('strengthIndicator').className = 'strength-indicator';
+    document.getElementById('strengthText').textContent = '密码强度：弱';
+}
 
+// 密码强度检测
+function checkPasswordStrength(password) {
+    let strength = 0;
+    let feedback = [];
+    
+    // 长度检查
+    if (password.length >= 8) {
+        strength += 25;
+    } else {
+        feedback.push('密码长度至少8位');
+    }
+    
+    // 包含数字
+    if (/\d/.test(password)) {
+        strength += 25;
+    } else {
+        feedback.push('建议包含数字');
+    }
+    
+    // 包含小写字母
+    if (/[a-z]/.test(password)) {
+        strength += 25;
+    } else {
+        feedback.push('建议包含小写字母');
+    }
+    
+    // 包含大写字母或特殊字符
+    if (/[A-Z!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+        strength += 25;
+    } else {
+        feedback.push('建议包含大写字母或特殊字符');
+    }
+    
+    return { strength, feedback };
+}
 
+// 实时密码强度检测
+document.addEventListener('DOMContentLoaded', () => {
+    const newPasswordInput = document.getElementById('newPassword');
+    if (newPasswordInput) {
+        newPasswordInput.addEventListener('input', function() {
+            const password = this.value;
+            const { strength, feedback } = checkPasswordStrength(password);
+            
+            const indicator = document.getElementById('strengthIndicator');
+            const strengthText = document.getElementById('strengthText');
+            
+            // 更新强度条
+            indicator.style.width = strength + '%';
+            
+            // 根据强度设置颜色和文本
+            if (strength < 50) {
+                indicator.className = 'strength-indicator weak';
+                strengthText.textContent = '密码强度：弱';
+                strengthText.style.color = '#ff4d4f';
+            } else if (strength < 75) {
+                indicator.className = 'strength-indicator medium';
+                strengthText.textContent = '密码强度：中';
+                strengthText.style.color = '#faad14';
+            } else {
+                indicator.className = 'strength-indicator strong';
+                strengthText.textContent = '密码强度：强';
+                strengthText.style.color = '#52c41a';
+            }
+        });
+    }
+});
 
+async function changeAdminPassword() {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmNewPassword').value;
+    
+    // 基本验证
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        showChangePasswordError('请填写所有字段');
+        return;
+    }
+    
+    // 验证当前密码
+    if (currentPassword !== DEFAULT_ADMIN.getPassword() && currentPassword !== DEFAULT_ADMIN.devPassword) {
+        showChangePasswordError('当前密码不正确');
+        return;
+    }
+    
+    // 验证新密码强度
+    const { strength, feedback } = checkPasswordStrength(newPassword);
+    if (strength < 50) {
+        showChangePasswordError('新密码强度不足：' + feedback.join('，'));
+        return;
+    }
+    
+    // 验证密码确认
+    if (newPassword !== confirmPassword) {
+        showChangePasswordError('两次输入的新密码不一致');
+        return;
+    }
+    
+    // 验证新密码不能与旧密码相同
+    if (newPassword === currentPassword) {
+        showChangePasswordError('新密码不能与当前密码相同');
+        return;
+    }
+    
+    try {
+        // 更新密码（这里模拟更新，实际应用中应该调用后端API）
+        await updateAdminPassword(newPassword);
+        
+        // 显示成功消息
+        showToast('✅ 密码修改成功！请重新登录');
+        
+        // 关闭模态框
+        closeChangePasswordModal();
+        
+        // 自动退出登录
+        setTimeout(() => {
+            logout();
+        }, 1500);
+        
+    } catch (error) {
+        console.error('密码修改失败:', error);
+        showChangePasswordError('密码修改失败：' + (error.message || '请重试'));
+    }
+}
 
+function showChangePasswordError(message) {
+    const errorEl = document.getElementById('changePasswordError');
+    if (errorEl) {
+        errorEl.textContent = message;
+        errorEl.style.display = 'block';
+        setTimeout(() => {
+            errorEl.style.display = 'none';
+        }, 5000);
+    }
+}
 
-
-
-
-
-
-
-
-
-
-
+// 模拟密码更新函数（实际应用中应该调用后端API）
+async function updateAdminPassword(newPassword) {
+    return new Promise((resolve, reject) => {
+        try {
+            // 这里应该调用后端API来更新密码
+            // 模拟异步操作
+            setTimeout(() => {
+                // 在开发环境中更新localStorage中的密码
+                DEFAULT_ADMIN.setDevPassword(newPassword);
+                
+                // 如果有后端API，应该这样调用：
+                // const response = await fetch('/api/admin/change-password', {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify({ 
+                //         currentPassword: currentPassword,
+                //         newPassword: newPassword 
+                //     })
+                // });
+                // 
+                // if (!response.ok) {
+                //     throw new Error('密码更新失败');
+                // }
+                
+                resolve();
+            }, 1000);
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
 
 
