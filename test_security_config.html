@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安全配置测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .security-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 3px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            width: 200px;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 安全配置测试</h1>
+        
+        <div class="security-warning">
+            <strong>⚠️ 安全提醒：</strong> 此页面用于测试安全配置，请勿在生产环境中使用
+        </div>
+
+        <!-- 配置检查 -->
+        <div class="test-section">
+            <h3>📋 配置安全检查</h3>
+            <button onclick="checkConfigSecurity()">检查配置安全性</button>
+            <div id="configCheckResult"></div>
+        </div>
+
+        <!-- 环境变量测试 -->
+        <div class="test-section">
+            <h3>⚙️ 环境变量测试</h3>
+            <button onclick="testEnvironmentVariables()">测试环境变量</button>
+            <div id="envTestResult"></div>
+        </div>
+
+        <!-- 密码安全测试 -->
+        <div class="test-section">
+            <h3>🔐 密码安全测试</h3>
+            <label>输入测试密码: </label>
+            <input type="password" id="testPassword" placeholder="输入密码进行测试">
+            <button onclick="testPasswordSecurity()">测试密码处理</button>
+            <div id="passwordTestResult"></div>
+        </div>
+
+        <!-- 本地存储测试 -->
+        <div class="test-section">
+            <h3>💾 本地存储测试</h3>
+            <button onclick="testLocalStorage()">测试本地存储</button>
+            <button onclick="clearLocalStorage()">清空本地存储</button>
+            <div id="storageTestResult"></div>
+        </div>
+
+        <!-- 认证测试 -->
+        <div class="test-section">
+            <h3>👤 认证机制测试</h3>
+            <label>用户名: </label>
+            <input type="text" id="testUsername" value="admin">
+            <label>密码: </label>
+            <input type="password" id="authPassword" placeholder="输入管理员密码">
+            <button onclick="testAuthentication()">测试认证</button>
+            <div id="authTestResult"></div>
+        </div>
+
+        <!-- 安全建议 -->
+        <div class="test-section">
+            <h3>💡 安全建议</h3>
+            <div class="code-block" id="securityRecommendations">
+// 安全配置建议：
+1. 使用环境变量存储敏感信息
+2. 实施密码哈希和盐值保护
+3. 启用登录失败锁定机制
+4. 定期轮换密码和密钥
+5. 使用HTTPS传输敏感数据
+6. 实施适当的访问控制
+7. 定期审查安全日志
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 检查配置安全性
+        function checkConfigSecurity() {
+            const resultDiv = document.getElementById('configCheckResult');
+            let results = [];
+            let isSecure = true;
+
+            // 检查是否有明文密码
+            if (typeof DEFAULT_ADMIN !== 'undefined') {
+                if (DEFAULT_ADMIN.password) {
+                    results.push('❌ 发现明文密码存储');
+                    isSecure = false;
+                } else {
+                    results.push('✅ 未发现明文密码');
+                }
+                
+                if (typeof DEFAULT_ADMIN.getPassword === 'function') {
+                    results.push('✅ 使用安全的密码获取方法');
+                } else {
+                    results.push('⚠️ 建议使用 getPassword 函数');
+                }
+            }
+
+            // 检查环境变量支持
+            if (typeof process !== 'undefined' && process.env) {
+                results.push('✅ 支持环境变量');
+            } else {
+                results.push('⚠️ 环境变量支持有限');
+            }
+
+            // 检查本地存储支持
+            if (typeof localStorage !== 'undefined') {
+                results.push('✅ 支持本地存储');
+            } else {
+                results.push('❌ 不支持本地存储');
+            }
+
+            const className = isSecure ? 'success' : 'danger';
+            resultDiv.innerHTML = `
+                <div class="test-result ${className}">
+                    <strong>配置安全检查结果:</strong><br>
+                    ${results.join('<br>')}
+                </div>
+            `;
+        }
+
+        // 测试环境变量
+        function testEnvironmentVariables() {
+            const resultDiv = document.getElementById('envTestResult');
+            let results = [];
+
+            // 模拟环境变量检查
+            results.push('🔍 检查环境变量支持...');
+            
+            if (typeof process !== 'undefined' && process.env) {
+                results.push('✅ Node.js 环境变量可用');
+                results.push(`   ADMIN_USERNAME: ${process.env.ADMIN_USERNAME || '未设置'}`);
+                results.push(`   ADMIN_PASSWORD: ${process.env.ADMIN_PASSWORD ? '[已设置]' : '未设置'}`);
+            } else {
+                results.push('⚠️ 浏览器环境，环境变量不可用');
+                results.push('💡 建议使用本地存储或服务器端环境变量');
+            }
+
+            resultDiv.innerHTML = `
+                <div class="test-result warning">
+                    <strong>环境变量测试:</strong><br>
+                    ${results.join('<br>')}
+                </div>
+            `;
+        }
+
+        // 测试密码安全
+        function testPasswordSecurity() {
+            const password = document.getElementById('testPassword').value;
+            const resultDiv = document.getElementById('passwordTestResult');
+            
+            if (!password) {
+                resultDiv.innerHTML = '<div class="test-result danger">请输入测试密码</div>';
+                return;
+            }
+
+            let results = [];
+            let score = 0;
+
+            // 密码强度检查
+            if (password.length >= 8) score++;
+            if (/[A-Z]/.test(password)) score++;
+            if (/[a-z]/.test(password)) score++;
+            if (/[0-9]/.test(password)) score++;
+            if (/[^A-Za-z0-9]/.test(password)) score++;
+
+            results.push(`密码长度: ${password.length} 字符`);
+            results.push(`包含大写字母: ${/[A-Z]/.test(password) ? '✓' : '✗'}`);
+            results.push(`包含小写字母: ${/[a-z]/.test(password) ? '✓' : '✗'}`);
+            results.push(`包含数字: ${/[0-9]/.test(password) ? '✓' : '✗'}`);
+            results.push(`包含特殊字符: ${/[^A-Za-z0-9]/.test(password) ? '✓' : '✗'}`);
+
+            const strength = score >= 4 ? '强' : score >= 3 ? '中等' : '弱';
+            const className = score >= 4 ? 'success' : score >= 3 ? 'warning' : 'danger';
+
+            results.push(`密码强度: ${strength} (${score}/5)`);
+
+            resultDiv.innerHTML = `
+                <div class="test-result ${className}">
+                    <strong>密码安全分析:</strong><br>
+                    ${results.join('<br>')}
+                </div>
+            `;
+        }
+
+        // 测试本地存储
+        function testLocalStorage() {
+            const resultDiv = document.getElementById('storageTestResult');
+            let results = [];
+
+            if (typeof localStorage !== 'undefined') {
+                try {
+                    // 测试存储功能
+                    const testKey = 'security_test_' + Date.now();
+                    localStorage.setItem(testKey, 'test_value');
+                    
+                    if (localStorage.getItem(testKey) === 'test_value') {
+                        results.push('✅ 本地存储功能正常');
+                        localStorage.removeItem(testKey);
+                    } else {
+                        results.push('❌ 本地存储读写异常');
+                    }
+
+                    // 检查现有安全相关的存储
+                    const items = ['dev_admin_password', 'admin_authenticated', 'admin_token'];
+                    items.forEach(item => {
+                        const value = localStorage.getItem(item);
+                        if (value) {
+                            results.push(`⚠️ 发现存储项: ${item} (${value.length} 字符)`);
+                        }
+                    });
+
+                } catch (error) {
+                    results.push(`❌ 本地存储错误: ${error.message}`);
+                }
+            } else {
+                results.push('❌ 不支持本地存储');
+            }
+
+            resultDiv.innerHTML = `
+                <div class="test-result warning">
+                    <strong>本地存储测试:</strong><br>
+                    ${results.join('<br>')}
+                </div>
+            `;
+        }
+
+        // 清空本地存储
+        function clearLocalStorage() {
+            if (typeof localStorage !== 'undefined') {
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.includes('admin') || key.includes('security')) {
+                        keysToRemove.push(key);
+                    }
+                }
+                
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                
+                document.getElementById('storageTestResult').innerHTML = `
+                    <div class="test-result success">
+                        ✅ 已清空 ${keysToRemove.length} 个安全相关存储项
+                    </div>
+                `;
+            }
+        }
+
+        // 测试认证
+        function testAuthentication() {
+            const username = document.getElementById('testUsername').value;
+            const password = document.getElementById('authPassword').value;
+            const resultDiv = document.getElementById('authTestResult');
+            
+            if (!username || !password) {
+                resultDiv.innerHTML = '<div class="test-result danger">请输入用户名和密码</div>';
+                return;
+            }
+
+            let results = [];
+            
+            // 模拟认证过程
+            results.push('🔍 开始认证测试...');
+            results.push(`用户名: ${username}`);
+            results.push('密码: ***** (已隐藏)');
+            
+            // 检查是否使用安全方法
+            if (typeof DEFAULT_ADMIN !== 'undefined' && typeof DEFAULT_ADMIN.getPassword === 'function') {
+                const storedPassword = DEFAULT_ADMIN.getPassword();
+                if (storedPassword === null) {
+                    results.push('✅ 使用动态密码获取（推荐）');
+                } else if (storedPassword) {
+                    results.push('⚠️ 发现静态密码存储');
+                }
+            }
+
+            // 模拟认证结果
+            setTimeout(() => {
+                const isSuccess = username === 'admin' && password.length > 0;
+                const className = isSuccess ? 'success' : 'danger';
+                const message = isSuccess ? '认证成功' : '认证失败';
+                
+                results.push(`🔐 认证结果: ${message}`);
+                
+                if (isSuccess) {
+                    results.push('💡 建议实施以下安全措施:');
+                    results.push('   • 使用密码哈希存储');
+                    results.push('   • 实施登录失败锁定');
+                    results.push('   • 启用双因素认证');
+                    results.push('   • 定期轮换密码');
+                }
+
+                resultDiv.innerHTML = `
+                    <div class="test-result ${className}">
+                        <strong>认证测试结果:</strong><br>
+                        ${results.join('<br>')}
+                    </div>
+                `;
+            }, 1000);
+        }
+
+        // 页面加载时自动运行基础检查
+        window.addEventListener('load', () => {
+            setTimeout(checkConfigSecurity, 500);
+        });
+    </script>
+</body>
+</html>

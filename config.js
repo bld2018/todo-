@@ -36,9 +36,49 @@ if (typeof window !== 'undefined' && window.supabase && window.supabase.createCl
 }
 
 // 4. 全局配置
+// ⚠️ 安全警告：管理员密码不应在代码中明文存储
+// 请使用以下安全方案之一：
+// 1. 环境变量方案（推荐用于生产环境）
+// 2. 安全配置文件方案
+// 3. 运行时输入方案
+
 const DEFAULT_ADMIN = {
     username: 'admin',
-    password: 'luo2026...'
+    // 安全的密码获取方式
+    getPassword: function() {
+        // 生产环境：从环境变量获取
+        if (typeof process !== 'undefined' && process.env?.ADMIN_PASSWORD) {
+            return process.env.ADMIN_PASSWORD;
+        }
+        
+        // 开发环境：从localStorage获取（如果之前保存过）
+        if (typeof localStorage !== 'undefined') {
+            const savedPassword = localStorage.getItem('dev_admin_password');
+            if (savedPassword) {
+                return savedPassword;
+            }
+        }
+        
+        // 返回null表示需要运行时输入
+        return null;
+    },
+    
+    // 设置开发密码（仅用于本地开发，部署时应删除或设为null）
+    setDevPassword: function(password) {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('dev_admin_password', password);
+        }
+    },
+    
+    // 清除开发密码
+    clearDevPassword: function() {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem('dev_admin_password');
+        }
+    },
+    
+    // 旧的开发密码字段（⚠️ 部署前必须删除）
+    devPassword: null // 已移除明文密码
 };
 
 const TARGET_SCORE = 2026;
